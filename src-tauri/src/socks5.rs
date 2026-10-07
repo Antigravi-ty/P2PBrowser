@@ -45,6 +45,63 @@ fn remove_client_socks5_stream(stream_id: u32) {
     }
 }
 
+/// Connect to target TCP endpoint with IPv4 resolution prioritization to avoid IPv6 routing blackholes
+async fn connect_direct_target(
+    target_host: &str,
+    target_port: u16,
+) -> Result<TcpStream, std::io::Error> {
+    let target_addr = format!("{}:{}", target_host, target_port);
+
+    // If target is already an IP address, connect directly
+    if let Ok(ip) = target_host.parse::<std::net::IpAddr>() {
+        let stream = tokio::time::timeout(
+            std::time::Duration::from_secs(12),
+            TcpStream::connect(std::net::SocketAddr::new(ip, target_port)),
+        )
+        .await
+        .map_err(|_| std::io::Error::new(std::io::ErrorKind::TimedOut, "Connect timeout"))??;
+        let _ = stream.set_nodelay(true);
+        return Ok(stream);
+    }
+
+    // Domain name: resolve host and sort IPv4 first to prevent IPv6 routing blackholes
+    if let Ok(lookup_res) = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        tokio::net::lookup_host(&target_addr),
+    )
+    .await
+    {
+        if let Ok(addrs) = lookup_res {
+            let mut addr_list: Vec<_> = addrs.collect();
+            addr_list.sort_by_key(|a| if a.is_ipv4() { 0 } else { 1 });
+            for addr in addr_list {
+                match tokio::time::timeout(
+                    std::time::Duration::from_secs(6),
+                    TcpStream::connect(addr),
+                )
+                .await
+                {
+                    Ok(Ok(stream)) => {
+                        let _ = stream.set_nodelay(true);
+                        return Ok(stream);
+                    }
+                    _ => continue,
+                }
+            }
+        }
+    }
+
+    // Final fallback: standard connect to target_addr
+    let stream = tokio::time::timeout(
+        std::time::Duration::from_secs(12),
+        TcpStream::connect(&target_addr),
+    )
+    .await
+    .map_err(|_| std::io::Error::new(std::io::ErrorKind::TimedOut, "Connect timeout"))??;
+    let _ = stream.set_nodelay(true);
+    Ok(stream)
+}
+
 /// SOCKS5 Proxy Handler (RFC 1928)
 /// Relays local browser connections either:
 /// 1) Over the WebRTC P2P DataChannel to the Remote Host (when P2P tunnel is active)
@@ -229,28 +286,64 @@ async fn handle_socks5_client(
     } else {
         // Mode B: Direct Local TCP Fallback
         log_info!("[SOCKS5] Direct TCP fallback: connecting to {}", target_addr);
-        let connect_future = TcpStream::connect(&target_addr);
-        match tokio::time::timeout(std::time::Duration::from_secs(8), connect_future).await {
-            Ok(Ok(mut target)) => {
-                client
+        match connect_direct_target(&target_host, target_port).await {
+            Ok(target) => {
+                let _ = client.set_nodelay(true);
+                // SOCKS5 SUCCESS reply (0x00)
+                if let Err(e) = client
                     .write_all(&[0x05, 0x00, 0x00, 0x01, 127, 0, 0, 1, 0, 0])
-                    .await?;
-                let _ = tokio::io::copy_bidirectional(&mut client, &mut target).await;
+                    .await
+                {
+                    return Err(e.into());
+                }
+
+                let (mut client_reader, mut client_writer) = client.into_split();
+                let (mut target_reader, mut target_writer) = target.into_split();
+
+                // Client -> Target forwarding task: on client EOF, shut down target write (half-close FIN)
+                // but allow Target -> Client to continue draining remaining response data!
+                let client_to_target = async move {
+                    let mut buf = vec![0u8; 16384];
+                    loop {
+                        match client_reader.read(&mut buf).await {
+                            Ok(0) => break,
+                            Ok(n) => {
+                                if target_writer.write_all(&buf[..n]).await.is_err() {
+                                    break;
+                                }
+                            }
+                            Err(_) => break,
+                        }
+                    }
+                    let _ = target_writer.shutdown().await;
+                };
+
+                // Target -> Client forwarding task: streams all response chunks to client
+                let target_to_client = async move {
+                    let mut buf = vec![0u8; 16384];
+                    loop {
+                        match target_reader.read(&mut buf).await {
+                            Ok(0) => break,
+                            Ok(n) => {
+                                if client_writer.write_all(&buf[..n]).await.is_err() {
+                                    break;
+                                }
+                            }
+                            Err(_) => break,
+                        }
+                    }
+                    let _ = client_writer.shutdown().await;
+                };
+
+                tokio::join!(client_to_target, target_to_client);
                 Ok(())
             }
-            Ok(Err(e)) => {
+            Err(e) => {
                 log_warn!("[SOCKS5] Direct connection to {} failed: {}", target_addr, e);
                 let _ = client
                     .write_all(&[0x05, 0x04, 0x00, 0x01, 0, 0, 0, 0, 0, 0])
                     .await;
                 Err(e.into())
-            }
-            Err(_) => {
-                log_warn!("[SOCKS5] Direct connection to {} timed out after 8s", target_addr);
-                let _ = client
-                    .write_all(&[0x05, 0x04, 0x00, 0x01, 0, 0, 0, 0, 0, 0])
-                    .await;
-                Err("Direct TCP connection timed out".into())
             }
         }
     }
