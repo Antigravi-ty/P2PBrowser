@@ -100,7 +100,8 @@ async fn handle_socks5_client(
             // IPv6
             let mut ipv6 = [0u8; 16];
             client.read_exact(&mut ipv6).await?;
-            "127.0.0.1".to_string()
+            let ip = std::net::Ipv6Addr::from(ipv6);
+            format!("[{}]", ip)
         }
         _ => {
             client

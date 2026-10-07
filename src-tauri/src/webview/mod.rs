@@ -85,7 +85,7 @@ pub async fn create_tab_webview(
     let ua = user_agent.unwrap_or_else(|| {
         #[cfg(target_os = "macos")]
         {
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36".to_string()
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15".to_string()
         }
         #[cfg(target_os = "windows")]
         {
@@ -100,6 +100,7 @@ pub async fn create_tab_webview(
     let mut builder = WebviewBuilder::new(&label, parsed_url)
         .data_directory(data_dir)
         .user_agent(&ua)
+        .enable_clipboard_access()
         .devtools(true);
 
     if let Some(ref proxy) = proxy_url {
@@ -130,6 +131,7 @@ pub async fn create_tab_webview(
     let title_app = app.clone();
     builder = builder.on_document_title_changed(move |wv, title| {
         let cur_url = wv.url().map(|u| u.to_string()).unwrap_or_default();
+        log_info!("[WebviewNav] [{}] Title update: '{}' (url: '{}')", title_label, title, cur_url);
         let _ = title_app.emit_to(
             "main",
             "tab-state-changed",
@@ -146,6 +148,7 @@ pub async fn create_tab_webview(
     let load_app = app.clone();
     builder = builder.on_page_load(move |_wv, payload| {
         let cur_url = payload.url().to_string();
+        log_info!("[WebviewNav] [{}] Page load finished: '{}'", load_label, cur_url);
         let _ = load_app.emit_to(
             "main",
             "tab-state-changed",
@@ -157,10 +160,12 @@ pub async fn create_tab_webview(
         );
     });
 
-    // Native on_navigation interceptor for download URLs
+    // Native on_navigation interceptor for download URLs and navigation tracking
     let nav_app = app.clone();
+    let nav_label = label.clone();
     builder = builder.on_navigation(move |nav_url| {
         let url_str = nav_url.as_str();
+        log_info!("[WebviewNav] [{}] Navigating to: '{}'", nav_label, url_str);
         if is_download_url(nav_url) {
             log_info!("[WebviewDownload] Native on_navigation intercepted download: {}", url_str);
             let app_h = nav_app.clone();
@@ -330,4 +335,34 @@ pub async fn start_download_requested(app: AppHandle, url: String) -> Result<(),
     crate::download::start_download_task(app, url, None)
         .await
         .map(|_| ())
+}
+
+/// Clear browsing data across all child webviews and delete persistent cookies/storage in shared profile
+#[command]
+pub async fn clear_browsing_data(app: AppHandle) -> Result<(), String> {
+    log_info!("[WebviewLayout] Clearing all browsing data and cookies");
+    for (_label, webview) in app.webviews() {
+        let _ = webview.clear_all_browsing_data();
+    }
+    let local_data = app
+        .path()
+        .app_local_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir().join("p2p_browser"));
+    let data_dir = local_data.join("webviews").join("shared_profile");
+    if data_dir.exists() {
+        let _ = std::fs::remove_dir_all(&data_dir);
+        let _ = std::fs::create_dir_all(&data_dir);
+    }
+    log_info!("[WebviewLayout] Successfully reset shared profile at {:?}", data_dir);
+    Ok(())
+}
+
+/// Log console message from webviews to terminal
+#[command]
+pub fn log_webview_console(label: String, level: String, message: String) {
+    match level.to_lowercase().as_str() {
+        "error" => log_error!("[WebviewConsole] [{}] {}", label, message),
+        "warn" => log_warn!("[WebviewConsole] [{}] {}", label, message),
+        _ => log_info!("[WebviewConsole] [{}] {}", label, message),
+    }
 }

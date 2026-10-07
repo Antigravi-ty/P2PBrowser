@@ -27,7 +27,7 @@ export function getPlatformUserAgent(): string {
       /Macintosh|Mac OS X/i.test(navigator.userAgent) ||
       navigator.platform?.toLowerCase().includes('mac');
     if (isMac) {
-      return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+      return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
     }
     const isLinux =
       /Linux/i.test(navigator.userAgent) ||
@@ -342,6 +342,24 @@ class TabWebviewManager {
     return currentOp;
   }
 
+  private isSameUrl(u1?: string, u2?: string): boolean {
+    if (!u1 || !u2) return false;
+    if (u1 === u2) return true;
+    try {
+      const p1 = new URL(u1);
+      const p2 = new URL(u2);
+      return p1.origin === p2.origin && p1.pathname.replace(/\/$/, '') === p2.pathname.replace(/\/$/, '') && p1.search === p2.search;
+    } catch (_) {
+      return u1.replace(/\/$/, '') === u2.replace(/\/$/, '');
+    }
+  }
+
+  public recordActiveUrl(tabId: string, url: string): void {
+    if (url && url !== 'about:blank') {
+      this.activeUrls.set(tabId, url);
+    }
+  }
+
   private async doSwitchTab(
     tabId: string,
     url: string,
@@ -404,8 +422,9 @@ class TabWebviewManager {
         webview = undefined;
       }
 
-      // If webview already exists and URL changed, navigate natively without re-creating
-      if (webview && currentUrl !== url) {
+      // If webview already exists and URL changed, navigate natively only if this is an explicit navigation
+      // (and the webview is not already loading or on that URL)
+      if (webview && currentUrl !== url && !this.isSameUrl(currentUrl, url)) {
         try {
           await invoke('navigate_tab_webview', { label: safeLabel, url });
           this.activeUrls.set(tabId, url);
@@ -529,6 +548,11 @@ class TabWebviewManager {
    * Clears browsing data for a tab or all tabs
    */
   public async clearBrowsingData(tabId?: string): Promise<void> {
+    try {
+      await invoke('clear_browsing_data');
+    } catch (e) {
+      console.warn('[TabWebviewManager] Rust clear_browsing_data failed:', e);
+    }
     if (tabId) {
       const wv = this.activeWebviews.get(tabId);
       if (wv) {

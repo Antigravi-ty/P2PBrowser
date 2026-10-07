@@ -44,6 +44,12 @@ export function useTabs({
       if (!payload || !payload.label) return;
       const safeTabId = payload.label.startsWith('wv_') ? payload.label.slice(3) : payload.label;
 
+      // Immediately inform TabWebviewManager of the page's current URL
+      // to avoid duplicate native navigation or load-cancellation loops
+      if (payload.url && payload.url !== 'about:blank') {
+        tabWebviewManager.recordActiveUrl(safeTabId, payload.url);
+      }
+
       setTabs((prev) =>
         prev.map((t) => {
           const currentSafeId = t.id.replace(/[^a-zA-Z0-9_-]/g, '_');

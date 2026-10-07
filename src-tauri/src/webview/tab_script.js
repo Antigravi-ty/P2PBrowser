@@ -59,15 +59,29 @@
         return parts.join(' ');
     }
 
+    function forwardToHost(level, msg) {
+        try {
+            if (window.__TAURI_INTERNALS__ && typeof window.__TAURI_INTERNALS__.invoke === 'function') {
+                window.__TAURI_INTERNALS__.invoke('log_webview_console', {
+                    label: tabLabel,
+                    level: level,
+                    message: msg
+                }).catch(function() {});
+            }
+        } catch (_) {}
+    }
+
     console.error = function() {
         var msg = formatMsg(arguments);
         origError('[TabWebview:' + tabLabel + '] [ERROR] ' + msg);
+        forwardToHost('error', msg);
         origError.apply(console, arguments);
     };
 
     console.warn = function() {
         var msg = formatMsg(arguments);
         origWarn('[TabWebview:' + tabLabel + '] [WARN] ' + msg);
+        forwardToHost('warn', msg);
         origWarn.apply(console, arguments);
     };
 
@@ -80,11 +94,13 @@
     window.addEventListener('error', function(e) {
         var msg = (e.message || 'Script error') + (e.filename ? ' at ' + e.filename + ':' + e.lineno + ':' + e.colno : '');
         origError('[TabWebview:' + tabLabel + '] [UncaughtException] ' + msg);
+        forwardToHost('error', 'UncaughtException: ' + msg);
     });
 
     window.addEventListener('unhandledrejection', function(e) {
         var reason = e.reason ? (e.reason.stack || e.reason.message || String(e.reason)) : 'unknown';
         origError('[TabWebview:' + tabLabel + '] [UnhandledRejection] ' + reason);
+        forwardToHost('error', 'UnhandledRejection: ' + reason);
     });
 
     // 3. Handle Cmd (Mac) / Ctrl (Windows/Linux) click or middle-click on links to open in new tab

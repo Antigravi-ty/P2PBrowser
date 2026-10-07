@@ -125,7 +125,7 @@ fn get_unique_destination_path(dir: &Path, filename: &str) -> PathBuf {
 fn get_platform_user_agent() -> &'static str {
     #[cfg(target_os = "macos")]
     {
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
     }
     #[cfg(target_os = "windows")]
     {
