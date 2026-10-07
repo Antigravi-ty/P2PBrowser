@@ -1,0 +1,231 @@
+@import "./assets/fonts/jetbrains-mono.css";
+
+:root {
+  /*
+   * Monospace UI font stack:
+   * 1. SF Mono (macOS native)
+   * 2. JetBrains Mono (embedded TrueType hinted webfont)
+   * 3. Cascadia Code / Cascadia Mono (Windows native ClearType fallback)
+   * 4. Consolas, ui-monospace, Menlo, Monaco
+   * 5. Non-English / CJK / Chinese / System fallback:
+   *    SF Pro Display, -apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, Noto Sans SC, sans-serif
+   */
+  --font-mono: "SF Mono", SFMono-Regular, "JetBrains Mono", "Cascadia Code", "Cascadia Mono", Consolas, ui-monospace, Menlo, Monaco, "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+
+  font-family: var(--font-mono);
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+
+  /* Primary Light Theme (Default) */
+  --bg-canvas: #ffffff;
+  --bg-subtle: #f6f8fa;
+  --bg-inset: #eaeef2;
+  --bg-tertiary: #f3f4f6;
+  --border-default: #d0d7de;
+  --border-muted: #d8dee4;
+  --fg-default: #1f2328;
+  --fg-muted: #656d76;
+  --fg-subtle: #8c959f;
+  --card-bg: #ffffff;
+  --card-border: #d0d7de;
+  --color-success: #1a7f37;
+  --color-success-bg: rgba(26, 127, 55, 0.12);
+  --color-danger: #cf222e;
+  --color-danger-bg: rgba(207, 34, 46, 0.12);
+  --color-warning: #9a6700;
+  --color-warning-bg: rgba(154, 103, 0, 0.12);
+  --color-accent: #0969da;
+  --color-accent-bg: rgba(9, 105, 218, 0.12);
+  --btn-primary-bg: #1f883d;
+  --btn-primary-fg: #ffffff;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Dark Theme */
+  --bg-canvas: #0d1117;
+  --bg-subtle: #161b22;
+  --bg-inset: #010409;
+  --bg-tertiary: #21262d;
+  --border-default: #30363d;
+  --border-muted: #21262d;
+  --fg-default: #e6edf3;
+  --fg-muted: #848d97;
+  --fg-subtle: #6e7681;
+  --card-bg: #161b22;
+  --card-border: #30363d;
+  --color-success: #3fb950;
+  --color-success-bg: rgba(63, 185, 80, 0.15);
+  --color-danger: #f85149;
+  --color-danger-bg: rgba(248, 81, 73, 0.15);
+  --color-warning: #d29922;
+  --color-warning-bg: rgba(210, 153, 34, 0.15);
+  --color-accent: #58a6ff;
+  --color-accent-bg: rgba(88, 166, 255, 0.15);
+  --btn-primary-bg: #238636;
+  --btn-primary-fg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button, input, select, textarea, code, pre {
+  font-family: inherit;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-canvas);
+  color: var(--fg-default);
+  font-family: var(--font-mono);
+  text-rendering: optimizeLegibility;
+}
+
+/* Enable grayscale antialiasing on high-DPI displays (macOS Retina, 4K+),
+   while preserving DirectWrite subpixel ClearType on standard 1080p Windows screens */
+@media screen and (-webkit-min-device-pixel-ratio: 2), screen and (min-resolution: 192dpi) {
+  html, body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  background-color: var(--bg-canvas);
+  color: var(--fg-default);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}
+
+/* Tab item hover and active styling */
+.tab-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: var(--fg-muted);
+  background: transparent;
+}
+
+.tab-item:hover {
+  background-color: var(--bg-inset);
+  color: var(--fg-default);
+}
+
+.tab-item.active {
+  background-color: var(--bg-canvas);
+  color: var(--color-accent);
+  font-weight: 600;
+  border-left: 3px solid var(--color-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tab-close-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  padding: 3px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-item:hover .tab-close-btn {
+  opacity: 0.7;
+}
+
+.tab-close-btn:hover {
+  opacity: 1 !important;
+  color: var(--color-danger) !important;
+  background-color: var(--color-danger-bg) !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Sidebar action button (DevTools, New Tab, etc.) */
+.sidebar-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sidebar-action-btn:hover {
+  color: var(--color-accent);
+  background-color: var(--bg-inset);
+}
+
+.sidebar-action-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Sidebar Downloads Show All button */
+.sidebar-downloads-show-all-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-downloads-show-all-btn:hover {
+  opacity: 0.7;
+}
+

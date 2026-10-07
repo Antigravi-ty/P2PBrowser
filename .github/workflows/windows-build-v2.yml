@@ -1,0 +1,95 @@
+name: Build Win App 261007-1706
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean_build:
+        description: 'Perform clean cargo build (ignore cargo cache)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build-windows:
+    name: Build Windows x64 Binary & Bundle
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust Stable Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # 1. 升级到支持新版 Cache API 的版本（v0.0.11+）
+      - name: Setup sccache (Compiler Cache)
+        if: "!inputs.clean_build"
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Build Tauri Desktop Application
+        env:
+          # 2. 如果开启缓存则注入对应变量
+          SCCACHE_GHA_ENABLED: ${{ !inputs.clean_build && 'true' || 'false' }}
+          RUSTC_WRAPPER: ${{ !inputs.clean_build && 'sccache' || '' }}
+          CARGO_INCREMENTAL: "0"
+        run: npm run tauri build
+
+      # 3. 修复这里的 if 语法，去掉 ${{ }}
+      - name: Output Sccache Compilation Statistics
+        if: always() && !inputs.clean_build
+        shell: bash
+        run: |
+          echo "### 📊 Sccache Build Cache Summary" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          sccache --show-stats | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Prepare Artifacts Directory
+        shell: bash
+        run: |
+          mkdir -p dist-artifacts/standalone
+          mkdir -p dist-artifacts/installers
+
+          if [ -f src-tauri/target/release/p2p-browser.exe ]; then
+            cp src-tauri/target/release/p2p-browser.exe dist-artifacts/standalone/P2PBrowser-Portable.exe
+          elif [ -f src-tauri/target/release/p2p_browser.exe ]; then
+            cp src-tauri/target/release/p2p_browser.exe dist-artifacts/standalone/P2PBrowser-Portable.exe
+          fi
+
+          if [ -d src-tauri/target/release/bundle/nsis ]; then
+            cp src-tauri/target/release/bundle/nsis/*.exe dist-artifacts/installers/ 2>/dev/null || true
+          fi
+
+          if [ -d src-tauri/target/release/bundle/msi ]; then
+            cp src-tauri/target/release/bundle/msi/*.msi dist-artifacts/installers/ 2>/dev/null || true
+          fi
+
+          echo "Artifacts collected successfully:"
+          ls -la dist-artifacts/
+
+      - name: Upload Standalone Portable Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: P2PBrowser-Windows-Portable-Exe
+          path: dist-artifacts/standalone/
+          retention-days: 30
+
+      - name: Upload Complete Windows Build Package (Installers & Standalone)
+        uses: actions/upload-artifact@v4
+        with:
+          name: P2PBrowser-Windows-All-Artifacts
+          path: dist-artifacts/
+          retention-days: 30

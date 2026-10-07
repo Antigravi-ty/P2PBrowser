@@ -1,0 +1,125 @@
+name: win build 260107-2213
+
+on:
+  workflow_dispatch:
+    inputs:
+      clean_build:
+        description: 'Perform clean cargo build (ignore compiler cache)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build-windows:
+    name: Build Windows x64 Binary & Bundle
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust Stable Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # 1. 安装 Sccache 编译器包装器
+      - name: Setup sccache (Compiler Cache)
+        if: "!inputs.clean_build"
+        uses: mozilla-actions/sccache-action@v0.0.11
+
+      # 2. 全域多层通用缓存（破除分支隔离与历史重写）
+      #    - 缓存 ~/.cargo/registry/cache 与 ~/.cargo/git/db：解决依赖重复下载
+      #    - 缓存 sccache 目录：解决跨分支编译器结果复用
+      #    - 缓存 src-tauri/target/release：解决 65 个过程宏(proc-macro)重复编译
+      - name: Setup Universal Cross-Branch Cargo & Sccache Cache
+        if: "!inputs.clean_build"
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            ${{ runner.temp }}/sccache
+            src-tauri/target/release/build
+            src-tauri/target/release/deps
+            src-tauri/target/release/.fingerprint
+          key: ${{ runner.os }}-universal-build-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-universal-build-${{ github.ref_name }}-
+            ${{ runner.os }}-universal-build-${{ github.event.repository.default_branch }}-
+            ${{ runner.os }}-universal-build-
+
+      # 3. 缓存 Tauri 打包工具（WiX 3.14 和 NSIS 3.11），避免重复网络下载
+      - name: Cache Tauri Bundler Tools (WiX / NSIS)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.LOCALAPPDATA }}\tauri
+          key: ${{ runner.os }}-tauri-bundlers-v1
+          restore-keys: |
+            ${{ runner.os }}-tauri-bundlers-
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Build Tauri Desktop Application
+        env:
+          RUSTC_WRAPPER: ${{ !inputs.clean_build && 'sccache' || '' }}
+          CARGO_INCREMENTAL: "0"
+          SCCACHE_DIR: ${{ runner.temp }}/sccache
+          SCCACHE_CACHE_SIZE: "3G"
+        run: npm run tauri build
+
+      # 4. 在 GitHub Step Summary 输出 Sccache 命中报告
+      - name: Output Sccache Compilation Statistics
+        if: always() && !inputs.clean_build
+        shell: bash
+        run: |
+          echo "### 📊 Sccache Build Cache Summary" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          sccache --show-stats | tee -a $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Prepare Artifacts Directory
+        shell: bash
+        run: |
+          mkdir -p dist-artifacts/standalone
+          mkdir -p dist-artifacts/installers
+
+          if [ -f src-tauri/target/release/p2p-browser.exe ]; then
+            cp src-tauri/target/release/p2p-browser.exe dist-artifacts/standalone/P2PBrowser-Portable.exe
+          elif [ -f src-tauri/target/release/p2p_browser.exe ]; then
+            cp src-tauri/target/release/p2p_browser.exe dist-artifacts/standalone/P2PBrowser-Portable.exe
+          fi
+
+          if [ -d src-tauri/target/release/bundle/nsis ]; then
+            cp src-tauri/target/release/bundle/nsis/*.exe dist-artifacts/installers/ 2>/dev/null || true
+          fi
+
+          if [ -d src-tauri/target/release/bundle/msi ]; then
+            cp src-tauri/target/release/bundle/msi/*.msi dist-artifacts/installers/ 2>/dev/null || true
+          fi
+
+          echo "Artifacts collected successfully:"
+          ls -la dist-artifacts/
+
+      - name: Upload Standalone Portable Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: P2PBrowser-Windows-Portable-Exe
+          path: dist-artifacts/standalone/
+          retention-days: 30
+
+      - name: Upload Complete Windows Build Package (Installers & Standalone)
+        uses: actions/upload-artifact@v4
+        with:
+          name: P2PBrowser-Windows-All-Artifacts
+          path: dist-artifacts/
+          retention-days: 30
