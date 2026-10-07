@@ -15,7 +15,47 @@
     // Real Safari does not have `window.chrome`. Injecting it causes risk-control engines
     // (Bilibili Gaia, GeeTest, Cloudflare) to flag the user as an automated bot (UA/object mismatch).
 
-    // 2. Handle Cmd (Mac) / Ctrl (Windows/Linux) click or middle-click on links to open in new tab
+    // 2. Compatibility normalization for Bilibili PC Passport SPA router
+    // Bilibili's Rsbuild/VueRouter is configured with `base: "/pc/passport"`.
+    // Direct requests to `/login` or `/` do not match the base and render an empty `#app`.
+    try {
+        if (location.hostname === 'passport.bilibili.com') {
+            if (location.pathname === '/login' || location.pathname === '/') {
+                console.log('[P2PBrowser] Normalizing Bilibili PC passport route -> /pc/passport/login');
+                location.replace('/pc/passport/login' + location.search);
+                return;
+            }
+        }
+    } catch (_) {}
+
+    // 3. Diagnostic Logging for Developer Tools
+    console.log('[P2PBrowser Diagnostic] Webview initialized on:', location.href);
+
+    window.addEventListener('error', function(e) {
+        console.error('[P2PBrowser Diagnostic] Script error:', e.message, 'at', e.filename, 'line', e.lineno);
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+        console.warn('[P2PBrowser Diagnostic] Unhandled rejection:', e.reason);
+    });
+
+    if (location.hostname.indexOf('bilibili.com') !== -1) {
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                var appEl = document.querySelector('#passport-app') || document.querySelector('#app') || document.body;
+                console.log(
+                    '[P2PBrowser Diagnostic] Bilibili page state:',
+                    location.pathname,
+                    'app children:',
+                    appEl ? appEl.childElementCount : 0,
+                    'text length:',
+                    appEl ? appEl.textContent.trim().length : 0
+                );
+            }, 1000);
+        });
+    }
+
+    // 4. Handle Cmd (Mac) / Ctrl (Windows/Linux) click or middle-click on links to open in new tab
     function openLinkInNewTab(url) {
         if (!url) return;
         var trimmed = String(url).trim();
@@ -42,7 +82,7 @@
     document.addEventListener("click", handleLinkActivation, true);
     document.addEventListener("auxclick", handleLinkActivation, true);
 
-    // 3. Synchronize dynamic title mutations for SPAs and client-side routers
+    // 5. Synchronize dynamic title mutations for SPAs and client-side routers
     function observeDocumentTitle() {
         var titleEl = document.querySelector("title");
         if (titleEl) {

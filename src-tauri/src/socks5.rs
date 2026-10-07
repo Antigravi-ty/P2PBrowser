@@ -304,6 +304,7 @@ async fn handle_socks5_client(
                 // but allow Target -> Client to continue draining remaining response data!
                 let client_to_target = async move {
                     let mut buf = vec![0u8; 16384];
+                    let mut sent_bytes = 0usize;
                     loop {
                         match client_reader.read(&mut buf).await {
                             Ok(0) => break,
@@ -311,16 +312,19 @@ async fn handle_socks5_client(
                                 if target_writer.write_all(&buf[..n]).await.is_err() {
                                     break;
                                 }
+                                sent_bytes += n;
                             }
                             Err(_) => break,
                         }
                     }
                     let _ = target_writer.shutdown().await;
+                    sent_bytes
                 };
 
                 // Target -> Client forwarding task: streams all response chunks to client
                 let target_to_client = async move {
                     let mut buf = vec![0u8; 16384];
+                    let mut recv_bytes = 0usize;
                     loop {
                         match target_reader.read(&mut buf).await {
                             Ok(0) => break,
@@ -328,14 +332,17 @@ async fn handle_socks5_client(
                                 if client_writer.write_all(&buf[..n]).await.is_err() {
                                     break;
                                 }
+                                recv_bytes += n;
                             }
                             Err(_) => break,
                         }
                     }
                     let _ = client_writer.shutdown().await;
+                    recv_bytes
                 };
 
-                tokio::join!(client_to_target, target_to_client);
+                let (sent, recv) = tokio::join!(client_to_target, target_to_client);
+                log_info!("[SOCKS5] Stream to {} completed (sent: {} B, received: {} B)", target_addr, sent, recv);
                 Ok(())
             }
             Err(e) => {
