@@ -228,20 +228,28 @@ async fn handle_socks5_client(
     } else {
         // Mode B: Direct Local TCP Fallback
         log_info!("[SOCKS5] Direct TCP fallback: connecting to {}", target_addr);
-        match TcpStream::connect(&target_addr).await {
-            Ok(mut target) => {
+        let connect_future = TcpStream::connect(&target_addr);
+        match tokio::time::timeout(std::time::Duration::from_secs(8), connect_future).await {
+            Ok(Ok(mut target)) => {
                 client
                     .write_all(&[0x05, 0x00, 0x00, 0x01, 127, 0, 0, 1, 0, 0])
                     .await?;
                 let _ = tokio::io::copy_bidirectional(&mut client, &mut target).await;
                 Ok(())
             }
-            Err(e) => {
+            Ok(Err(e)) => {
                 log_warn!("[SOCKS5] Direct connection to {} failed: {}", target_addr, e);
-                client
+                let _ = client
                     .write_all(&[0x05, 0x04, 0x00, 0x01, 0, 0, 0, 0, 0, 0])
-                    .await?;
+                    .await;
                 Err(e.into())
+            }
+            Err(_) => {
+                log_warn!("[SOCKS5] Direct connection to {} timed out after 8s", target_addr);
+                let _ = client
+                    .write_all(&[0x05, 0x04, 0x00, 0x01, 0, 0, 0, 0, 0, 0])
+                    .await;
+                Err("Direct TCP connection timed out".into())
             }
         }
     }

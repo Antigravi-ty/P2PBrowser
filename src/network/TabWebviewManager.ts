@@ -21,8 +21,25 @@ export interface WebviewBounds {
   height: number;
 }
 
-const DESKTOP_USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+export function getPlatformUserAgent(): string {
+  if (typeof navigator !== 'undefined') {
+    const isMac =
+      /Macintosh|Mac OS X/i.test(navigator.userAgent) ||
+      navigator.platform?.toLowerCase().includes('mac');
+    if (isMac) {
+      return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    }
+    const isLinux =
+      /Linux/i.test(navigator.userAgent) ||
+      navigator.platform?.toLowerCase().includes('linux');
+    if (isLinux) {
+      return 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    }
+  }
+  return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+}
+
+const DESKTOP_USER_AGENT = getPlatformUserAgent();
 
 class TabWebviewManager {
   private activeWebviews: Map<string, Webview> = new Map();
@@ -201,7 +218,7 @@ class TabWebviewManager {
       height,
       proxyUrl: proxyUrl || null,
       darkMode: this.currentTheme === 'dark',
-      userAgent: DESKTOP_USER_AGENT,
+      userAgent: getPlatformUserAgent(),
       backgroundColor: bgColor,
     });
 
@@ -621,6 +638,37 @@ class TabWebviewManager {
         console.warn('[TabWebviewManager] Failed to show webview on restore: ' + err);
       }
     }
+  }
+
+  /**
+   * Opens Developer Tools for the given tab or currently active tab
+   */
+  public async openDevtools(tabId?: string): Promise<void> {
+    if (!this.isSupported) return;
+    const targetId = tabId || this.currentTabId;
+    if (!targetId) {
+      try {
+        await invoke('open_devtools');
+      } catch (_) {}
+      return;
+    }
+    const safeTabId = targetId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeLabel = `wv_${safeTabId}`;
+    try {
+      console.log(`[TabWebviewManager] Opening DevTools for tab ${safeLabel}`);
+      await invoke('open_devtools', { label: safeLabel });
+    } catch (e) {
+      console.warn(`[TabWebviewManager] Failed to open devtools for ${safeLabel}:`, e);
+      try {
+        await invoke('open_devtools');
+      } catch (_) {}
+    }
+  }
+
+  public get activeTabLabel(): string | null {
+    if (!this.currentTabId) return null;
+    const safeTabId = this.currentTabId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return `wv_${safeTabId}`;
   }
 }
 

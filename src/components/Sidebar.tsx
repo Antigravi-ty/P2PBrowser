@@ -16,6 +16,7 @@ import {
 import { isTauri, invoke } from '@tauri-apps/api/core';
 import { BrowserTab, TunnelState, AppRole, DownloadTask } from '../types/network';
 import { SidebarDownloads } from './SidebarDownloads';
+import { tabWebviewManager } from '../network/TabWebviewManager';
 
 export type ActiveView = 'browser' | 'info';
 
@@ -69,12 +70,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleOpenConsole = async () => {
     console.log(
-      `%c[P2P DevTools] 💻 Main Console Opened via Sidebar • Commit: ${commitHash}`,
+      `%c[P2P DevTools] 💻 Console Requested via Sidebar • Commit: ${commitHash}`,
       'color: #3b82f6; font-weight: bold; font-size: 13px; background: #eff6ff; padding: 2px 6px; border-radius: 4px;'
     );
     if (isTauri()) {
       try {
-        await invoke('open_devtools');
+        if (isBrowsingView && activeTabId) {
+          await tabWebviewManager.openDevtools(activeTabId);
+        } else {
+          await invoke('open_devtools');
+        }
       } catch (err) {
         console.warn('[Sidebar] Failed to open devtools:', err);
       }

@@ -20,19 +20,29 @@ pub fn get_system_info() -> SystemInfo {
 #[command]
 pub fn open_devtools(app: AppHandle, label: Option<String>) -> Result<(), String> {
     let target = label.unwrap_or_else(|| "main".to_string());
+    crate::log_info!("[System] open_devtools requested for target '{}'", target);
     if let Some(_wv) = app.get_webview(&target) {
         #[cfg(any(debug_assertions, feature = "devtools"))]
-        _wv.open_devtools();
-        return Ok(());
+        {
+            _wv.open_devtools();
+            crate::log_info!("[System] Successfully opened devtools for webview '{}'", target);
+            return Ok(());
+        }
     }
     if let Some(_win) = app.get_webview_window(&target) {
         #[cfg(any(debug_assertions, feature = "devtools"))]
-        _win.open_devtools();
-        return Ok(());
+        {
+            _win.open_devtools();
+            crate::log_info!("[System] Successfully opened devtools for webview_window '{}'", target);
+            return Ok(());
+        }
     }
     if let Some(_win) = app.get_webview_window("main") {
         #[cfg(any(debug_assertions, feature = "devtools"))]
-        _win.open_devtools();
+        {
+            _win.open_devtools();
+            crate::log_info!("[System] Fallback opened devtools for 'main' window");
+        }
     }
     Ok(())
 }

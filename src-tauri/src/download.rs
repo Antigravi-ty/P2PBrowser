@@ -122,6 +122,21 @@ fn get_unique_destination_path(dir: &Path, filename: &str) -> PathBuf {
     }
 }
 
+fn get_platform_user_agent() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    }
+    #[cfg(target_os = "windows")]
+    {
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    }
+}
+
 async fn fetch_response(url: &str) -> Result<reqwest::Response, reqwest::Error> {
     let proxy_port = crate::socks5::get_active_proxy_port();
     let tunnel_active = crate::socks5::is_tunnel_active();
@@ -129,7 +144,7 @@ async fn fetch_response(url: &str) -> Result<reqwest::Response, reqwest::Error> 
         log_info!("[Download] Routing download through P2P SOCKS5 proxy (127.0.0.1:{})", proxy_port);
         if let Ok(proxy) = reqwest::Proxy::all(format!("socks5h://127.0.0.1:{}", proxy_port)) {
             if let Ok(client) = reqwest::Client::builder()
-                .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+                .user_agent(get_platform_user_agent())
                 .redirect(reqwest::redirect::Policy::limited(10))
                 .proxy(proxy)
                 .connect_timeout(Duration::from_secs(25))
@@ -150,7 +165,7 @@ async fn fetch_response(url: &str) -> Result<reqwest::Response, reqwest::Error> 
 
     log_info!("[Download] Connecting directly to '{}'", url);
     let direct_client = reqwest::Client::builder()
-        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+        .user_agent(get_platform_user_agent())
         .redirect(reqwest::redirect::Policy::limited(10))
         .connect_timeout(Duration::from_secs(20))
         .build()?;

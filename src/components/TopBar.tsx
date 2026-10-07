@@ -12,8 +12,10 @@ import {
   SunIcon,
   MoonIcon,
   ShieldCheckIcon,
+  CodeIcon,
 } from '@primer/octicons-react';
 import { AppRole, GoogleProbeResult } from '../types/network';
+import { tabWebviewManager } from '../network/TabWebviewManager';
 
 interface TopBarProps {
   url: string;
@@ -330,6 +332,24 @@ export const TopBar: React.FC<TopBarProps> = ({
           }}
         >
           {theme === 'light' ? <MoonIcon size={16} /> : <SunIcon size={16} fill="var(--color-warning)" />}
+        </button>
+
+        {/* DevTools / Inspect Webview Button */}
+        <button
+          onClick={() => tabWebviewManager.openDevtools()}
+          title="Open Web Inspector / DevTools for active tab"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--fg-muted)',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <CodeIcon size={16} />
         </button>
 
         {/* Settings Button */}

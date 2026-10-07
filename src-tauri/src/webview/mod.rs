@@ -63,16 +63,17 @@ pub async fn create_tab_webview(
             err
         })?;
 
-    // Create an isolated data directory for this tab under AppData/Local/com.p2pbrowser.desktop/webviews/<label>
+    // Shared profile data directory under AppData/Local/com.p2pbrowser.desktop/webviews/shared_profile
+    // Sharing the profile across tabs ensures shared cookies, localStorage, and persistent login sessions across tabs and OAuth popups.
     let local_data = app
         .path()
         .app_local_data_dir()
         .unwrap_or_else(|_| std::env::temp_dir().join("p2p_browser"));
-    let data_dir = local_data.join("webviews").join(&label);
+    let data_dir = local_data.join("webviews").join("shared_profile");
     if let Err(e) = std::fs::create_dir_all(&data_dir) {
-        log_warn!("[WebviewLayout] Failed to create tab data dir {:?}: {}", data_dir, e);
+        log_warn!("[WebviewLayout] Failed to create shared tab data dir {:?}: {}", data_dir, e);
     } else {
-        log_info!("[WebviewLayout] Isolated tab data directory for '{}': {:?}", label, data_dir);
+        log_info!("[WebviewLayout] Shared tab data directory for '{}': {:?}", label, data_dir);
     }
 
     let parsed_url = if url.starts_with("http://") || url.starts_with("https://") {
@@ -82,12 +83,24 @@ pub async fn create_tab_webview(
     };
 
     let ua = user_agent.unwrap_or_else(|| {
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36".to_string()
+        #[cfg(target_os = "macos")]
+        {
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36".to_string()
+        }
+        #[cfg(target_os = "windows")]
+        {
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36".to_string()
+        }
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        {
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36".to_string()
+        }
     });
 
     let mut builder = WebviewBuilder::new(&label, parsed_url)
         .data_directory(data_dir)
-        .user_agent(&ua);
+        .user_agent(&ua)
+        .devtools(true);
 
     if let Some(ref proxy) = proxy_url {
         if !proxy.trim().is_empty() {
