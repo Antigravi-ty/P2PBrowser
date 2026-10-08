@@ -70,16 +70,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleOpenConsole = async () => {
     console.log(
-      `%c[P2P DevTools] 💻 Console Requested via Sidebar • Commit: ${commitHash}`,
-      'color: #3b82f6; font-weight: bold; font-size: 13px; background: #eff6ff; padding: 2px 6px; border-radius: 4px;'
+      `%c[P2P DevTools] 💻 Developer Console Opened via Sidebar (Commit: ${commitHash})`,
+      'color: #38bdf8; font-weight: bold; font-size: 13px; background: #0f172a; padding: 4px 8px; border-radius: 4px;'
     );
     if (isTauri()) {
       try {
-        if (isBrowsingView && activeTabId) {
-          await tabWebviewManager.openDevtools(activeTabId);
-        } else {
-          await invoke('open_devtools');
-        }
+        await invoke('open_devtools');
       } catch (err) {
         console.warn('[Sidebar] Failed to open devtools:', err);
       }
@@ -124,10 +120,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {commitHash}
             </span>
           </div>
-          <Tooltip text="Open Developer Console (Father Webview)" direction="s">
+          <Tooltip text="Open Developer Tools Console" direction="s">
             <button
               onClick={handleOpenConsole}
-              aria-label="Open Developer Console"
+              aria-label="Open Developer Tools Console"
               className="sidebar-action-btn"
             >
               <TerminalIcon size={16} />
@@ -147,6 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <button
             onClick={() => onRoleChange('client')}
+            className={`segmented-btn ${role === 'client' ? 'active' : ''}`}
             style={{
               flex: 1,
               fontSize: '11px',
@@ -161,7 +158,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               justifyContent: 'center',
               gap: '4px',
               fontWeight: role === 'client' ? 600 : 400,
-              transition: 'all 0.15s ease',
             }}
           >
             <GlobeIcon size={11} />
@@ -169,6 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button
             onClick={() => onRoleChange('host')}
+            className={`segmented-btn ${role === 'host' ? 'active' : ''}`}
             style={{
               flex: 1,
               fontSize: '11px',
@@ -183,7 +180,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               justifyContent: 'center',
               gap: '4px',
               fontWeight: role === 'host' ? 600 : 400,
-              transition: 'all 0.15s ease',
             }}
           >
             <ServerIcon size={11} />
@@ -203,6 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <button
             onClick={() => onActiveViewChange('browser')}
+            className={`segmented-btn ${activeView === 'browser' ? 'active' : ''}`}
             style={{
               flex: 1,
               fontSize: '12px',
@@ -217,7 +214,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               justifyContent: 'center',
               gap: '5px',
               fontWeight: activeView === 'browser' ? 600 : 400,
-              transition: 'all 0.15s ease',
             }}
           >
             <GlobeIcon size={13} />
@@ -225,6 +221,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button
             onClick={() => onActiveViewChange('info')}
+            className={`segmented-btn ${activeView === 'info' ? 'active' : ''}`}
             style={{
               flex: 1,
               fontSize: '12px',
@@ -239,7 +236,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               justifyContent: 'center',
               gap: '5px',
               fontWeight: activeView === 'info' ? 600 : 400,
-              transition: 'all 0.15s ease',
             }}
           >
             {role === 'host' ? <ServerIcon size={13} /> : <InfoIcon size={13} />}
@@ -341,10 +337,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Quick link to switch back to Web Tabs */}
             <button
               onClick={() => onActiveViewChange('browser')}
+              className="btn-secondary"
               style={{
                 padding: '8px 12px',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--border-default)',
                 borderRadius: '6px',
                 color: 'var(--color-accent)',
                 fontSize: '12px',

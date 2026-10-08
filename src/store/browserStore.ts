@@ -33,6 +33,12 @@ function sanitizeTabId(id: string): string {
   return id.replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
+export function isInternalPageUrl(url?: string): boolean {
+  if (!url) return true;
+  const lower = url.trim().toLowerCase();
+  return lower === '' || lower === 'about:blank' || lower.startsWith('about:') || lower.startsWith('p2p://');
+}
+
 export function areUrlsEquivalent(u1?: string, u2?: string): boolean {
   if (!u1 || !u2) return false;
   if (u1 === u2) return true;
@@ -66,11 +72,13 @@ export const useBrowserStore = create<BrowserStoreState>((set, get) => ({
       }
     }
 
+    const isInternal = isInternalPageUrl(initialUrl);
+
     const newTab: BrowserTab = {
       id: newId,
       title,
       url: initialUrl,
-      isLoading: initialUrl !== 'about:blank',
+      isLoading: !isInternal,
       canGoBack: false,
       canGoForward: false,
       isSecured: true,
@@ -164,7 +172,7 @@ export const useBrowserStore = create<BrowserStoreState>((set, get) => ({
             ...t,
             url,
             title: t.url === url && t.title && t.title !== 'New Tab' ? t.title : title,
-            isLoading: url !== 'about:blank' && !url.startsWith('p2p://'),
+            isLoading: !isInternalPageUrl(url),
             canGoBack,
             canGoForward,
             history: nextHistory,
@@ -217,7 +225,7 @@ export const useBrowserStore = create<BrowserStoreState>((set, get) => ({
             ...t,
             url: targetUrl,
             title: nextTitle,
-            isLoading: targetUrl !== 'about:blank' && !targetUrl.startsWith('p2p://'),
+            isLoading: !isInternalPageUrl(targetUrl),
             historyIndex: nextIndex,
             canGoBack,
             canGoForward,
@@ -269,7 +277,7 @@ export const useBrowserStore = create<BrowserStoreState>((set, get) => ({
             ...t,
             url: targetUrl,
             title: nextTitle,
-            isLoading: targetUrl !== 'about:blank' && !targetUrl.startsWith('p2p://'),
+            isLoading: !isInternalPageUrl(targetUrl),
             historyIndex: nextIndex,
             canGoBack,
             canGoForward,
@@ -326,11 +334,13 @@ export const useBrowserStore = create<BrowserStoreState>((set, get) => ({
         const canGoBack = currentIndex > 0;
         const canGoForward = currentIndex < currentHistory.length - 1;
 
+        const isInternal = isInternalPageUrl(nextUrl);
+
         return {
           ...t,
           url: nextUrl,
           title: nextTitle,
-          isLoading: hasTitle ? false : t.isLoading,
+          isLoading: isInternal ? false : hasTitle ? false : t.isLoading,
           history: currentHistory,
           historyIndex: currentIndex,
           canGoBack,
@@ -342,7 +352,15 @@ export const useBrowserStore = create<BrowserStoreState>((set, get) => ({
 
   setTabLoading: (tabId: string, isLoading: boolean) => {
     set((state) => ({
-      tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isLoading } : t)),
+      tabs: state.tabs.map((t) => {
+        if (t.id === tabId) {
+          if (isInternalPageUrl(t.url)) {
+            return { ...t, isLoading: false };
+          }
+          return { ...t, isLoading };
+        }
+        return t;
+      }),
     }));
   },
 

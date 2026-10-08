@@ -3,7 +3,7 @@ import { isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { AppRole, BrowserTab } from '../types/network';
 import { tabWebviewManager } from '../network/TabWebviewManager';
-import { useBrowserStore } from '../store/browserStore';
+import { useBrowserStore, isInternalPageUrl } from '../store/browserStore';
 
 interface UseTabsProps {
   role: AppRole;
@@ -93,27 +93,31 @@ export function useTabs({
     tabWebviewManager.hideAll();
     const existing = tabs.find((t) => t.url === 'p2p://settings');
     if (existing) {
+      setTabLoading(existing.id, false);
       tabWebviewManager.setCurrentInternalTab(existing.id, 'p2p://settings');
       setActiveTabId(existing.id);
     } else {
       const id = newTab('p2p://settings', 'Settings');
+      setTabLoading(id, false);
       tabWebviewManager.setCurrentInternalTab(id, 'p2p://settings');
     }
     onOpenNewTabNavigate?.();
-  }, [newTab, onOpenNewTabNavigate, setActiveTabId, tabs]);
+  }, [newTab, onOpenNewTabNavigate, setActiveTabId, setTabLoading, tabs]);
 
   const openDownloadsTab = useCallback(() => {
     tabWebviewManager.hideAll();
     const existing = tabs.find((t) => t.url === 'p2p://downloads');
     if (existing) {
+      setTabLoading(existing.id, false);
       tabWebviewManager.setCurrentInternalTab(existing.id, 'p2p://downloads');
       setActiveTabId(existing.id);
     } else {
       const id = newTab('p2p://downloads', 'Downloads');
+      setTabLoading(id, false);
       tabWebviewManager.setCurrentInternalTab(id, 'p2p://downloads');
     }
     onOpenNewTabNavigate?.();
-  }, [newTab, onOpenNewTabNavigate, setActiveTabId, tabs]);
+  }, [newTab, onOpenNewTabNavigate, setActiveTabId, setTabLoading, tabs]);
 
   const handleCloseTab = useCallback(
     (id: string, e?: React.MouseEvent) => {
@@ -126,10 +130,13 @@ export function useTabs({
 
   const handleNavigate = useCallback(
     (url: string) => {
-      if (url.startsWith('p2p://')) {
+      const isInternal = isInternalPageUrl(url);
+
+      if (isInternal) {
         tabWebviewManager.hideAll();
         tabWebviewManager.setCurrentInternalTab(activeTabId, url);
         navigate(url, activeTabId);
+        setTabLoading(activeTabId, false);
         return;
       }
 
@@ -137,13 +144,6 @@ export function useTabs({
         alert(
           'Please connect to a room, verify Google connectivity, or choose "Continue without Google" before browsing.'
         );
-        return;
-      }
-
-      if (url === 'about:blank') {
-        tabWebviewManager.hideAll();
-        tabWebviewManager.setCurrentInternalTab(activeTabId, 'about:blank');
-        navigate(url, activeTabId);
         return;
       }
 
@@ -164,13 +164,14 @@ export function useTabs({
     const res = goBack(activeTabId);
     if (!res.isBackSuccessful || !res.targetUrl) return;
 
-    if (res.targetUrl === 'about:blank' || res.targetUrl.startsWith('p2p://')) {
+    if (isInternalPageUrl(res.targetUrl)) {
       tabWebviewManager.hideAll();
       tabWebviewManager.setCurrentInternalTab(activeTabId, res.targetUrl);
+      setTabLoading(activeTabId, false);
     } else {
       tabWebviewManager.goBack(activeTabId, res.targetUrl);
     }
-  }, [activeTabId, goBack, tabs]);
+  }, [activeTabId, goBack, setTabLoading, tabs]);
 
   const handleGoForward = useCallback(() => {
     const curTab = tabs.find((t) => t.id === activeTabId);
@@ -179,20 +180,24 @@ export function useTabs({
     const res = goForward(activeTabId);
     if (!res.isForwardSuccessful || !res.targetUrl) return;
 
-    if (res.targetUrl === 'about:blank' || res.targetUrl.startsWith('p2p://')) {
+    if (isInternalPageUrl(res.targetUrl)) {
       tabWebviewManager.hideAll();
       tabWebviewManager.setCurrentInternalTab(activeTabId, res.targetUrl);
+      setTabLoading(activeTabId, false);
     } else {
       tabWebviewManager.goForward(activeTabId, res.targetUrl);
     }
-  }, [activeTabId, goForward, tabs]);
+  }, [activeTabId, goForward, setTabLoading, tabs]);
 
   const handleReload = useCallback(() => {
-    if (activeTab.url && activeTab.url !== 'about:blank' && !activeTab.url.startsWith('p2p://')) {
+    const isInternal = isInternalPageUrl(activeTab.url);
+    if (!isInternal) {
       tabWebviewManager.reloadTab(activeTab.id, activeTab.url);
+      handleNavigate(activeTab.url);
+    } else {
+      setTabLoading(activeTab.id, false);
     }
-    handleNavigate(activeTab.url);
-  }, [activeTab.id, activeTab.url, handleNavigate]);
+  }, [activeTab.id, activeTab.url, handleNavigate, setTabLoading]);
 
   return {
     tabs,

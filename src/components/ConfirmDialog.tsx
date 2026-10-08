@@ -107,9 +107,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             onClick={onClose}
             aria-label="Close"
+            className="btn-ghost"
             style={{
-              background: 'transparent',
-              border: 'none',
               color: 'var(--fg-muted)',
               cursor: 'pointer',
               padding: '4px',
@@ -163,13 +162,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             type="button"
             onClick={onClose}
+            className="btn-secondary"
             style={{
-              backgroundColor: 'var(--bg-canvas)',
-              border: '1px solid var(--border-default)',
-              borderRadius: '6px',
               padding: '7px 14px',
-              color: 'var(--fg-default)',
-              cursor: 'pointer',
               fontSize: '13px',
               fontWeight: 500,
             }}
@@ -182,6 +177,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               onConfirm();
               onClose();
             }}
+            className={
+              confirmVariant === 'danger'
+                ? 'btn-danger-solid'
+                : confirmVariant === 'warning'
+                ? 'btn-warning-outline'
+                : 'btn-primary'
+            }
             style={{
               backgroundColor: getConfirmBg(),
               border: 'none',

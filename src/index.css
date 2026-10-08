@@ -77,6 +77,22 @@ button, input, select, textarea, code, pre {
   font-family: inherit;
 }
 
+button {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.55;
+  transform: none !important;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -131,7 +147,7 @@ html, body {
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   font-size: 13px;
   margin-bottom: 2px;
@@ -144,6 +160,10 @@ html, body {
   color: var(--fg-default);
 }
 
+.tab-item:active {
+  transform: scale(0.99);
+}
+
 .tab-item.active {
   background-color: var(--bg-canvas);
   color: var(--color-accent);
@@ -154,7 +174,7 @@ html, body {
 
 .tab-close-btn {
   opacity: 0;
-  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.08s ease;
   padding: 3px;
   border-radius: 4px;
   display: flex;
@@ -170,6 +190,10 @@ html, body {
   opacity: 1 !important;
   color: var(--color-danger) !important;
   background-color: var(--color-danger-bg) !important;
+}
+
+.tab-close-btn:active {
+  transform: scale(0.92);
 }
 
 @keyframes spin {
@@ -227,5 +251,195 @@ html, body {
 
 .sidebar-downloads-show-all-btn:hover {
   opacity: 0.7;
+}
+
+/* ==========================================================================
+   Apple Human Interface Guidelines & Primer Button Interactive System
+   ========================================================================== */
+
+/* Ghost action icon buttons (TopBar navigation & toolbar icons) */
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--fg-default);
+  cursor: pointer;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-ghost:not(:disabled):hover {
+  background-color: var(--bg-inset);
+  color: var(--fg-default);
+}
+
+.btn-ghost:not(:disabled):active {
+  background-color: var(--border-default);
+  transform: scale(0.94);
+}
+
+.btn-ghost:disabled {
+  color: var(--fg-muted);
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Secondary outline buttons (Configuration, Presets, Clear Cache, Recheck, etc.) */
+.btn-secondary {
+  background-color: var(--bg-canvas);
+  border: 1px solid var(--border-default);
+  color: var(--fg-default);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-secondary:not(:disabled):hover {
+  background-color: var(--bg-subtle);
+  border-color: var(--fg-muted);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.btn-secondary:not(:disabled):active {
+  background-color: var(--bg-inset);
+  transform: scale(0.97);
+  box-shadow: none;
+}
+
+/* Primary buttons (Create Server, Connect to Room, Connect P2P, etc.) */
+.btn-primary {
+  background-color: var(--btn-primary-bg);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:not(:disabled):hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 6px rgba(31, 136, 61, 0.35);
+}
+
+.btn-primary:not(:disabled):active {
+  filter: brightness(0.92);
+  transform: scale(0.97);
+}
+
+/* Danger Outline buttons (Clear Cookies, Reset Defaults, Disconnect) */
+.btn-danger-outline {
+  background-color: var(--bg-canvas);
+  border: 1px solid rgba(207, 34, 46, 0.4);
+  color: var(--color-danger);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-danger-outline:not(:disabled):hover {
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
+  box-shadow: 0 1px 3px rgba(207, 34, 46, 0.15);
+}
+
+.btn-danger-outline:not(:disabled):active {
+  background-color: rgba(207, 34, 46, 0.22);
+  transform: scale(0.97);
+}
+
+/* Danger Solid buttons (Clear All Browsing Data, Stop Server, Disconnect P2P) */
+.btn-danger-solid {
+  background-color: var(--color-danger);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.btn-danger-solid:not(:disabled):hover {
+  filter: brightness(1.12);
+  box-shadow: 0 2px 6px rgba(207, 34, 46, 0.4);
+}
+
+.btn-danger-solid:not(:disabled):active {
+  filter: brightness(0.9);
+  transform: scale(0.97);
+}
+
+/* Warning Outline buttons (Continue without Google, Force Start) */
+.btn-warning-outline {
+  background-color: rgba(217, 119, 6, 0.08);
+  border: 1px solid #d97706;
+  color: #d97706;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-warning-outline:not(:disabled):hover {
+  background-color: rgba(217, 119, 6, 0.18);
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.2);
+}
+
+.btn-warning-outline:not(:disabled):active {
+  background-color: rgba(217, 119, 6, 0.28);
+  transform: scale(0.97);
+}
+
+/* Accent Solid buttons (Copy Logs, Open Folder in Finder/Explorer) */
+.btn-accent {
+  background-color: var(--color-accent);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-accent:not(:disabled):hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 6px rgba(9, 105, 218, 0.35);
+}
+
+.btn-accent:not(:disabled):active {
+  filter: brightness(0.9);
+  transform: scale(0.97);
+}
+
+/* Settings Category Navigation button */
+.settings-nav-item {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-nav-item:not(.active):hover {
+  background-color: var(--bg-inset) !important;
+  color: var(--fg-default) !important;
+}
+
+.settings-nav-item:active {
+  transform: scale(0.99);
+}
+
+/* Segmented switch buttons (Role picker & View picker in Sidebar) */
+.segmented-btn {
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.segmented-btn:not(.active):hover {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--fg-default) !important;
+}
+
+.segmented-btn:not(.active):active {
+  transform: scale(0.97);
 }
 

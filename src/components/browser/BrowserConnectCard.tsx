@@ -134,11 +134,9 @@ export const BrowserConnectCard: React.FC<BrowserConnectCardProps> = ({
             <button
               onClick={onRecheckGoogle}
               disabled={isCheckingGoogle}
+              className="btn-primary"
               style={{
                 width: '100%',
-                backgroundColor: 'var(--btn-primary-bg)',
-                border: 'none',
-                borderRadius: '6px',
                 padding: '10px 16px',
                 color: '#ffffff',
                 fontSize: '14px',
@@ -157,13 +155,10 @@ export const BrowserConnectCard: React.FC<BrowserConnectCardProps> = ({
             {/* Continue without Google Option */}
             <button
               onClick={onRequestContinueWithoutGoogle}
+              className="btn-warning-outline"
               style={{
                 width: '100%',
-                backgroundColor: 'var(--bg-subtle)',
-                border: '1px solid var(--border-default)',
-                borderRadius: '6px',
                 padding: '9px 16px',
-                color: '#d97706',
                 fontSize: '13px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -179,11 +174,9 @@ export const BrowserConnectCard: React.FC<BrowserConnectCardProps> = ({
             {onOpenDashboard && (
               <button
                 onClick={onOpenDashboard}
+                className="btn-secondary"
                 style={{
                   width: '100%',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--border-default)',
-                  borderRadius: '6px',
                   padding: '8px 16px',
                   color: 'var(--fg-default)',
                   fontSize: '13px',
@@ -432,9 +425,8 @@ export const BrowserConnectCard: React.FC<BrowserConnectCardProps> = ({
               <button
                 onClick={onRecheckGoogle}
                 disabled={isCheckingGoogle}
+                className="btn-secondary"
                 style={{
-                  backgroundColor: 'var(--bg-canvas)',
-                  border: '1px solid var(--border-default)',
                   borderRadius: '4px',
                   padding: '4px 10px',
                   fontSize: '11px',
@@ -470,14 +462,12 @@ export const BrowserConnectCard: React.FC<BrowserConnectCardProps> = ({
                 </span>
                 <button
                   onClick={onRequestContinueWithoutGoogle}
+                  className="btn-warning-outline"
                   style={{
-                    backgroundColor: '#d97706',
-                    border: 'none',
                     borderRadius: '4px',
                     padding: '4px 10px',
                     fontSize: '11px',
                     fontWeight: 600,
-                    color: '#ffffff',
                     cursor: 'pointer',
                   }}
                 >
@@ -493,6 +483,7 @@ export const BrowserConnectCard: React.FC<BrowserConnectCardProps> = ({
           <button
             onClick={onConnectRoom}
             disabled={!isRoomCodeValid || isConnecting}
+            className="btn-primary"
             style={{
               width: '100%',
               backgroundColor: !isRoomCodeValid || isConnecting ? 'var(--bg-inset)' : 'var(--btn-primary-bg)',
@@ -507,7 +498,6 @@ export const BrowserConnectCard: React.FC<BrowserConnectCardProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              transition: 'all 0.2s ease',
             }}
           >
             {isConnecting ? (

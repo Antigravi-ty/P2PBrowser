@@ -327,9 +327,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
               onClick={onGenerateRandomRoom}
               disabled={isServerActive}
               title={isServerActive ? 'Stop server to change room ID' : 'Generate random 4-digit room code'}
+              className="btn-secondary"
               style={{
-                backgroundColor: 'var(--bg-subtle)',
-                border: '1px solid var(--border-default)',
                 borderRadius: '6px',
                 padding: '6px 12px',
                 color: isServerActive ? 'var(--fg-muted)' : 'var(--fg-default)',
@@ -348,9 +347,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
 
           <button
             onClick={onOpenSettings}
+            className="btn-secondary"
             style={{
-              backgroundColor: 'var(--bg-subtle)',
-              border: '1px solid var(--border-default)',
               borderRadius: '6px',
               padding: '6px 12px',
               color: 'var(--fg-default)',
@@ -372,9 +370,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
                 <button
                   onClick={() => onCreateServer(false)}
                   disabled={isStartingServer || !roomCode}
+                  className="btn-primary"
                   style={{
-                    backgroundColor: 'var(--btn-primary-bg)',
-                    border: 'none',
                     borderRadius: '6px',
                     padding: '6px 16px',
                     color: '#ffffff',
@@ -404,12 +401,10 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
                   <button
                     onClick={onRequestForceStartServer}
                     title="Start server and forward traffic even without Google access"
+                    className="btn-warning-outline"
                     style={{
-                      backgroundColor: 'rgba(217, 119, 6, 0.1)',
-                      border: '1px solid #d97706',
                       borderRadius: '6px',
                       padding: '6px 12px',
-                      color: '#d97706',
                       fontSize: '12px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -428,9 +423,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
                       ? 'Disconnect WebSocket Token Server to prevent new connections while keeping current P2P peers'
                       : 'Reconnect to WebSocket Token Server to accept new connections'
                   }
+                  className={isTokenServerOnline ? 'btn-secondary' : 'btn-accent'}
                   style={{
-                    backgroundColor: isTokenServerOnline ? 'var(--bg-subtle)' : 'var(--color-accent)',
-                    border: isTokenServerOnline ? '1px solid var(--color-warning)' : 'none',
                     borderRadius: '6px',
                     padding: '6px 12px',
                     color: isTokenServerOnline ? 'var(--color-warning)' : '#ffffff',
@@ -444,9 +438,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
 
                 <button
                   onClick={onStopServer}
+                  className="btn-danger-solid"
                   style={{
-                    backgroundColor: 'var(--color-danger)',
-                    border: 'none',
                     borderRadius: '6px',
                     padding: '6px 14px',
                     color: '#ffffff',
@@ -464,9 +457,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
             isClientConnected ? (
               <button
                 onClick={onStopServer}
+                className="btn-danger-solid"
                 style={{
-                  backgroundColor: 'var(--color-danger)',
-                  border: 'none',
                   borderRadius: '6px',
                   padding: '6px 14px',
                   color: '#ffffff',
@@ -481,9 +473,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
               <button
                 onClick={onConnectClient}
                 disabled={isClientConnecting || !roomCode}
+                className="btn-primary"
                 style={{
-                  backgroundColor: 'var(--btn-primary-bg)',
-                  border: 'none',
                   borderRadius: '6px',
                   padding: '6px 16px',
                   color: '#ffffff',
@@ -513,9 +504,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
           {/* Switch to Browser Button */}
           <button
             onClick={onSwitchToBrowser}
+            className="btn-secondary"
             style={{
-              backgroundColor: 'var(--color-accent-bg)',
-              border: '1px solid var(--color-accent)',
               borderRadius: '6px',
               padding: '6px 14px',
               color: 'var(--color-accent)',
@@ -599,13 +589,11 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
           {googleResult && !googleResult.success && !bypassedGoogle && onRequestContinueWithoutGoogle && (
             <button
               onClick={onRequestContinueWithoutGoogle}
+              className="btn-warning-outline"
               style={{
-                backgroundColor: 'rgba(217, 119, 6, 0.1)',
-                border: '1px solid #d97706',
                 borderRadius: '6px',
                 padding: '5px 12px',
                 fontSize: '12px',
-                color: '#d97706',
                 cursor: 'pointer',
                 fontWeight: 600,
               }}
@@ -617,9 +605,8 @@ export const ServerDashboard: React.FC<ServerDashboardProps> = ({
           <button
             onClick={onRecheckGoogle}
             disabled={isCheckingGoogle}
+            className="btn-secondary"
             style={{
-              backgroundColor: 'var(--bg-subtle)',
-              border: '1px solid var(--border-default)',
               borderRadius: '6px',
               padding: '5px 12px',
               fontSize: '12px',

@@ -12,10 +12,9 @@ import {
   SunIcon,
   MoonIcon,
   ShieldCheckIcon,
-  CodeIcon,
 } from '@primer/octicons-react';
 import { AppRole, GoogleProbeResult } from '../types/network';
-import { tabWebviewManager } from '../network/TabWebviewManager';
+import { isInternalPageUrl } from '../store/browserStore';
 
 interface TopBarProps {
   url: string;
@@ -91,6 +90,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   };
 
   const isHttps = inputUrl.startsWith('https://');
+  const isInternal = isInternalPageUrl(url);
+  const effectiveIsLoading = !isInternal && isLoading;
 
   return (
     <header
@@ -112,13 +113,12 @@ export const TopBar: React.FC<TopBarProps> = ({
           disabled={!canGoBack}
           onClick={onGoBack}
           title="Back"
+          className="btn-ghost nav-icon-btn"
           style={{
-            background: 'transparent',
-            border: 'none',
             color: canGoBack ? 'var(--fg-default)' : 'var(--fg-muted)',
             cursor: canGoBack ? 'pointer' : 'default',
             padding: '6px',
-            borderRadius: '4px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
           }}
@@ -130,13 +130,12 @@ export const TopBar: React.FC<TopBarProps> = ({
           disabled={!canGoForward}
           onClick={onGoForward}
           title="Forward"
+          className="btn-ghost nav-icon-btn"
           style={{
-            background: 'transparent',
-            border: 'none',
             color: canGoForward ? 'var(--fg-default)' : 'var(--fg-muted)',
             cursor: canGoForward ? 'pointer' : 'default',
             padding: '6px',
-            borderRadius: '4px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
           }}
@@ -146,33 +145,31 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         <button
           onClick={onReload}
-          disabled={isLoading}
-          title={isLoading ? 'Loading page...' : 'Reload Page'}
+          disabled={effectiveIsLoading}
+          title={effectiveIsLoading ? 'Loading page...' : 'Reload Page'}
+          className="btn-ghost nav-icon-btn"
           style={{
-            background: 'transparent',
-            border: 'none',
             color: 'var(--fg-default)',
-            cursor: isLoading ? 'default' : 'pointer',
+            cursor: effectiveIsLoading ? 'default' : 'pointer',
             padding: '6px',
-            borderRadius: '4px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
-            opacity: isLoading ? 0.6 : 1,
+            opacity: effectiveIsLoading ? 0.6 : 1,
           }}
         >
-          <SyncIcon className={isLoading ? 'spin' : ''} size={16} fill={isLoading ? 'var(--color-accent)' : 'currentColor'} />
+          <SyncIcon className={effectiveIsLoading ? 'spin' : ''} size={16} fill={effectiveIsLoading ? 'var(--color-accent)' : 'currentColor'} />
         </button>
 
         <button
           onClick={() => onNavigate('about:blank')}
           title="Home"
+          className="btn-ghost nav-icon-btn"
           style={{
-            background: 'transparent',
-            border: 'none',
             color: 'var(--fg-default)',
             cursor: 'pointer',
             padding: '6px',
-            borderRadius: '4px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
           }}
@@ -183,14 +180,13 @@ export const TopBar: React.FC<TopBarProps> = ({
         <button
           onClick={onOpenDownloads}
           title="Downloads Manager"
+          className="btn-ghost nav-icon-btn"
           style={{
             position: 'relative',
-            background: 'transparent',
-            border: 'none',
             color: 'var(--fg-default)',
             cursor: 'pointer',
             padding: '6px',
-            borderRadius: '4px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
           }}
@@ -270,7 +266,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               width: '100%',
             }}
           />
-          {isLoading && (
+          {effectiveIsLoading && (
             <SyncIcon className="spin" size={14} fill="var(--color-accent)" />
           )}
         </div>
@@ -283,14 +279,13 @@ export const TopBar: React.FC<TopBarProps> = ({
           onClick={onRecheckGoogle}
           disabled={isCheckingGoogle}
           title={isCheckingGoogle ? 'Verifying Google connection, please wait...' : 'Click to re-verify Google 204 connectivity'}
+          className="btn-secondary"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
             padding: '4px 10px',
-            border: '1px solid var(--border-default)',
             borderRadius: '6px',
-            backgroundColor: 'var(--bg-canvas)',
             color: 'var(--fg-default)',
             fontSize: '12px',
             cursor: isCheckingGoogle ? 'not-allowed' : 'pointer',
@@ -326,50 +321,29 @@ export const TopBar: React.FC<TopBarProps> = ({
         <button
           onClick={onToggleTheme}
           title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+          className="btn-secondary"
           style={{
-            background: 'transparent',
-            border: '1px solid var(--border-default)',
             color: 'var(--fg-default)',
             cursor: 'pointer',
             padding: '6px',
             borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: 'var(--bg-canvas)',
           }}
         >
           {theme === 'light' ? <MoonIcon size={16} /> : <SunIcon size={16} fill="var(--color-warning)" />}
-        </button>
-
-        {/* DevTools / Inspect Webview Button */}
-        <button
-          onClick={() => tabWebviewManager.openDevtools()}
-          title="Open Web Inspector / DevTools for active tab"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--fg-muted)',
-            cursor: 'pointer',
-            padding: '6px',
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <CodeIcon size={16} />
         </button>
 
         {/* Settings Button */}
         <button
           onClick={onOpenSettings}
           title="Settings"
+          className="btn-ghost nav-icon-btn"
           style={{
-            background: 'transparent',
-            border: 'none',
             color: 'var(--fg-default)',
             cursor: 'pointer',
             padding: '6px',
-            borderRadius: '4px',
+            borderRadius: '6px',
             display: 'flex',
             alignItems: 'center',
           }}

@@ -283,6 +283,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
+                className={`settings-nav-item ${isSelected ? 'active' : ''}`}
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -294,7 +295,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   color: isSelected ? 'var(--color-accent)' : 'var(--fg-default)',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'all 0.15s ease',
                 }}
               >
                 <div style={{ marginTop: '2px', color: isSelected ? 'var(--color-accent)' : 'var(--fg-muted)' }}>
@@ -341,14 +341,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               type="button"
               onClick={handleCopyCommit}
               title="Click to copy commit hash"
+              className="btn-ghost"
               style={{
                 fontFamily: 'var(--font-mono)',
                 color: 'var(--color-accent)',
-                background: 'transparent',
-                border: 'none',
                 cursor: 'pointer',
-                padding: '1px 4px',
-                borderRadius: '3px',
+                padding: '1px 6px',
+                borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -523,12 +522,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {isConnected ? (
                   <button
                     onClick={onDisconnect}
+                    className="btn-danger-outline"
                     style={{
                       padding: '8px 16px',
                       borderRadius: '6px',
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--color-danger)',
-                      color: 'var(--color-danger)',
                       fontSize: '13px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -540,6 +537,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     onClick={onConnect}
                     disabled={isConnecting || !roomId.trim()}
+                    className="btn-primary"
                     style={{
                       padding: '8px 20px',
                       borderRadius: '6px',
@@ -685,19 +683,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </div>
                     <button
                       onClick={openClearCacheDialog}
+                      className="btn-secondary"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                         padding: '6px 14px',
                         borderRadius: '6px',
-                        backgroundColor: 'var(--bg-canvas)',
-                        border: '1px solid var(--border-default)',
                         color: clearStatus.type === 'cache' ? 'var(--color-success)' : 'var(--fg-default)',
                         fontSize: '12px',
                         fontWeight: 500,
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease',
                       }}
                     >
                       {clearStatus.type === 'cache' ? <CheckCircleFillIcon size={14} /> : <TrashIcon size={14} />}
@@ -715,19 +711,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </div>
                     <button
                       onClick={openClearCookiesDialog}
+                      className="btn-danger-outline"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                         padding: '6px 14px',
                         borderRadius: '6px',
-                        backgroundColor: 'var(--bg-canvas)',
-                        border: '1px solid rgba(207, 34, 46, 0.4)',
                         color: clearStatus.type === 'cookies' ? 'var(--color-success)' : 'var(--color-danger)',
                         fontSize: '12px',
                         fontWeight: 600,
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease',
                       }}
                     >
                       {clearStatus.type === 'cookies' ? <CheckCircleFillIcon size={14} /> : <TrashIcon size={14} />}
@@ -747,6 +741,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </div>
                     <button
                       onClick={openClearAllDialog}
+                      className="btn-danger-solid"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -760,7 +755,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         fontWeight: 600,
                         cursor: 'pointer',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                        transition: 'opacity 0.15s ease',
                       }}
                     >
                       {clearStatus.type === 'all' ? <CheckCircleFillIcon size={14} /> : <TrashIcon size={14} />}
@@ -866,6 +860,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyLogs}
+                    className="btn-accent"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -887,6 +882,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="button"
                     onClick={() => exportDiagnosticsFile({ role, roomId })}
+                    className="btn-secondary"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -894,9 +890,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       padding: '8px 14px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      backgroundColor: 'var(--bg-subtle)',
-                      color: 'var(--fg-default)',
-                      border: '1px solid var(--border-default)',
                       borderRadius: '6px',
                       cursor: 'pointer',
                     }}
@@ -908,6 +901,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="button"
                     onClick={handleOpenDevTools}
+                    className="btn-secondary"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -915,9 +909,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       padding: '8px 14px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      backgroundColor: 'var(--bg-subtle)',
-                      color: 'var(--fg-default)',
-                      border: '1px solid var(--border-default)',
                       borderRadius: '6px',
                       cursor: 'pointer',
                     }}
@@ -933,6 +924,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       setLogCopyFeedback('Log buffer cleared');
                       setTimeout(() => setLogCopyFeedback(null), 2000);
                     }}
+                    className="btn-secondary"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -940,9 +932,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       padding: '8px 14px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      backgroundColor: 'var(--bg-subtle)',
                       color: 'var(--fg-muted)',
-                      border: '1px solid var(--border-default)',
                       borderRadius: '6px',
                       cursor: 'pointer',
                     }}
@@ -1031,13 +1021,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => applyPreset('clean')}
+                      className="btn-secondary"
                       style={{
                         padding: '4px 10px',
                         fontSize: '11px',
                         fontWeight: 500,
-                        backgroundColor: 'var(--bg-canvas)',
                         color: 'var(--color-accent)',
-                        border: '1px solid var(--border-default)',
                         borderRadius: '4px',
                         cursor: 'pointer',
                       }}
@@ -1047,13 +1036,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => applyPreset('all')}
+                      className="btn-secondary"
                       style={{
                         padding: '4px 10px',
                         fontSize: '11px',
                         fontWeight: 500,
-                        backgroundColor: 'var(--bg-canvas)',
                         color: 'var(--fg-default)',
-                        border: '1px solid var(--border-default)',
                         borderRadius: '4px',
                         cursor: 'pointer',
                       }}
@@ -1063,13 +1051,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <button
                       type="button"
                       onClick={() => applyPreset('mute')}
+                      className="btn-secondary"
                       style={{
                         padding: '4px 10px',
                         fontSize: '11px',
                         fontWeight: 500,
-                        backgroundColor: 'var(--bg-canvas)',
                         color: 'var(--fg-muted)',
-                        border: '1px solid var(--border-default)',
                         borderRadius: '4px',
                         cursor: 'pointer',
                       }}
@@ -1254,6 +1241,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="button"
                     onClick={openConfigFolder}
+                    className="btn-accent"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -1275,6 +1263,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="button"
                     onClick={reloadFromDisk}
+                    className="btn-secondary"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -1282,9 +1271,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       padding: '8px 14px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      backgroundColor: 'var(--bg-subtle)',
-                      color: 'var(--fg-default)',
-                      border: '1px solid var(--border-default)',
                       borderRadius: '6px',
                       cursor: 'pointer',
                     }}
@@ -1296,6 +1282,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="button"
                     onClick={resetToDefaults}
+                    className="btn-danger-outline"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -1303,9 +1290,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       padding: '8px 14px',
                       fontSize: '12px',
                       fontWeight: 500,
-                      backgroundColor: 'var(--bg-subtle)',
-                      color: 'var(--color-danger)',
-                      border: '1px solid var(--border-default)',
                       borderRadius: '6px',
                       cursor: 'pointer',
                     }}

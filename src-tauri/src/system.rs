@@ -37,11 +37,20 @@ pub fn open_devtools(app: AppHandle, label: Option<String>) -> Result<(), String
             return Ok(());
         }
     }
+    if let Some(_wv) = app.get_webview("main") {
+        #[cfg(any(debug_assertions, feature = "devtools"))]
+        {
+            _wv.open_devtools();
+            crate::log_info!("[System] Fallback opened devtools for 'main' webview");
+            return Ok(());
+        }
+    }
     if let Some(_win) = app.get_webview_window("main") {
         #[cfg(any(debug_assertions, feature = "devtools"))]
         {
             _win.open_devtools();
             crate::log_info!("[System] Fallback opened devtools for 'main' window");
+            return Ok(());
         }
     }
     Ok(())
