@@ -1,7 +1,22 @@
 [
   {
+    "title": "GAI CN",
+    "url": "https://www.google.ca/search?q=&udm=50&hl=zh-CN",
+    "icon": "bot-message-square"
+  },
+  {
     "title": "Google",
     "url": "https://www.google.com",
+    "icon": "svg:google"
+  },
+  {
+    "title": "G AI EN",
+    "url": "https://www.google.ca/search?q=&udm=50",
+    "icon": "text:EN"
+  },
+  {
+    "title": "AI Studio",
+    "url": "https://aistudio.google.com/prompts/new_chat",
     "icon": "svg:google"
   },
   {
