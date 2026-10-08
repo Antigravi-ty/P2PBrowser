@@ -248,6 +248,13 @@ export const TopBar: React.FC<TopBarProps> = ({
             type="text"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-gramm="false"
+            data-gramm_editor="false"
+            data-enable-grammarly="false"
             placeholder={
               !isClientReadyToBrowse && !bypassedGoogle
                 ? 'Test Google or connect room to browse...'

@@ -531,6 +531,40 @@ class TabWebviewManager {
   }
 
   /**
+   * Navigates the given tab backward in its native session history
+   */
+  public async goBack(tabId: string): Promise<boolean> {
+    if (!this.isSupported) return false;
+    const safeTabId = tabId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeLabel = `wv_${safeTabId}`;
+    try {
+      await invoke('go_back_tab_webview', { label: safeLabel });
+      console.log(`[TabWebviewManager] Successfully requested go back for tab ${tabId} (${safeLabel})`);
+      return true;
+    } catch (err) {
+      console.warn(`[TabWebviewManager] Native go back failed for ${safeLabel}:`, err);
+      return false;
+    }
+  }
+
+  /**
+   * Navigates the given tab forward in its native session history
+   */
+  public async goForward(tabId: string): Promise<boolean> {
+    if (!this.isSupported) return false;
+    const safeTabId = tabId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeLabel = `wv_${safeTabId}`;
+    try {
+      await invoke('go_forward_tab_webview', { label: safeLabel });
+      console.log(`[TabWebviewManager] Successfully requested go forward for tab ${tabId} (${safeLabel})`);
+      return true;
+    } catch (err) {
+      console.warn(`[TabWebviewManager] Native go forward failed for ${safeLabel}:`, err);
+      return false;
+    }
+  }
+
+  /**
    * Sets zoom factor for a webview
    */
   public async setZoom(tabId: string, factor: number): Promise<void> {

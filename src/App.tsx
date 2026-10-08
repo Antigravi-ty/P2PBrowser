@@ -140,6 +140,8 @@ export const App: React.FC = () => {
     handleCloseTab,
     handleNavigate,
     handleReload,
+    handleGoBack,
+    handleGoForward,
   } = useTabs({
     role,
     isClientReadyToBrowse,
@@ -267,8 +269,8 @@ export const App: React.FC = () => {
           onNavigate={handleNavigate}
           canGoBack={activeTab.canGoBack}
           canGoForward={activeTab.canGoForward}
-          onGoBack={() => {}}
-          onGoForward={() => {}}
+          onGoBack={handleGoBack}
+          onGoForward={handleGoForward}
           onReload={handleReload}
           isLoading={activeTab.isLoading}
           googleResult={googleResult}

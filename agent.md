@@ -62,6 +62,10 @@ src/
 │   ├── SignalingConfig.ts      # Room code generators and default WebSocket endpoints
 │   ├── TabWebviewManager.ts    # Child webview layout coordinate calculator and bridge
 │   └── WebSocketSignalingClient.ts # Resilient signaling client with auto-retry and race probes
+├── store/
+│   └── browserStore.ts         # Centralized Zustand store for tabs, navigation history stacks, and active tab
+├── config/
+│   └── shortcuts.json          # Configurable home shortcuts with SVG icons, titles, and URLs
 ├── types/
 │   └── network.ts              # Core TypeScript type definitions and IPC interfaces
 └── utils/

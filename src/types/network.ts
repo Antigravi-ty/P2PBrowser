@@ -96,6 +96,8 @@ export interface BrowserTab {
   canGoBack: boolean;
   canGoForward: boolean;
   isSecured: boolean;
+  history?: string[];
+  historyIndex?: number;
 }
 
 export interface EventLogItem {

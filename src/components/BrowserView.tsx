@@ -11,6 +11,7 @@ import { AppRole, BrowserTab, GoogleProbeResult, TunnelState, DownloadTask } fro
 import { tabWebviewManager } from '../network/TabWebviewManager';
 import { SettingsView } from './SettingsView';
 import { DownloadsView } from './DownloadsView';
+import shortcutsData from '../config/shortcuts.json';
 
 interface BrowserViewProps {
   activeTab: BrowserTab;
@@ -93,15 +94,6 @@ export const BrowserView: React.FC<BrowserViewProps> = ({
       ? Boolean(googleResult?.success) || bypassedGoogle
       : isClientReadyToBrowse;
   const isConnecting = tunnelState === 'signaling' || tunnelState === 'ice_gathering';
-
-  // Fast bookmarks
-  const quickLinks = [
-    { title: 'Google', url: 'https://www.google.com', icon: '🔍' },
-    { title: 'GitHub', url: 'https://github.com', icon: '🐙' },
-    { title: 'YouTube', url: 'https://www.youtube.com', icon: '▶️' },
-    { title: 'Cloudflare', url: 'https://www.cloudflare.com', icon: '☁️' },
-    { title: 'IP / Proxy Check', url: 'https://ip.sb', icon: '🌐' },
-  ];
 
   // Synchronize native child webview bounds and tab selection
   const updateWebviewBounds = useCallback((shouldFocus = false) => {
@@ -855,8 +847,8 @@ export const BrowserView: React.FC<BrowserViewProps> = ({
                 </div>
 
                 {/* Quick Launch Bookmarks */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px' }}>
-                  {quickLinks.map((link) => (
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', maxWidth: '580px', margin: '0 auto' }}>
+                  {shortcutsData.map((link) => (
                     <button
                       key={link.title}
                       onClick={(e) => {
@@ -866,8 +858,9 @@ export const BrowserView: React.FC<BrowserViewProps> = ({
                           onNavigate(link.url);
                         }
                       }}
+                      title={link.url}
                       style={{
-                        padding: '8px 16px',
+                        padding: '8px 14px',
                         backgroundColor: 'var(--card-bg)',
                         border: '1px solid var(--border-default)',
                         borderRadius: '6px',
@@ -878,9 +871,20 @@ export const BrowserView: React.FC<BrowserViewProps> = ({
                         fontSize: '13px',
                         cursor: 'pointer',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                        transition: 'background-color 0.15s ease',
                       }}
                     >
-                      <span>{link.icon}</span>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 18,
+                          height: 18,
+                          flexShrink: 0,
+                        }}
+                        dangerouslySetInnerHTML={{ __html: link.iconSvg }}
+                      />
                       <span>{link.title}</span>
                     </button>
                   ))}

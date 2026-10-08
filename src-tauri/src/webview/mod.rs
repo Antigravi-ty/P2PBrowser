@@ -293,6 +293,58 @@ pub async fn reload_tab_webview(
     Ok(())
 }
 
+/// Navigates back in child webview session history
+#[command]
+pub async fn go_back_tab_webview(
+    app: AppHandle,
+    label: String,
+) -> Result<(), String> {
+    log_info!("[WebviewLayout] go_back_tab_webview for label '{}'", label);
+
+    let webview = app.get_webview(&label)
+        .ok_or_else(|| {
+            let err = format!("Webview '{}' not found", label);
+            log_error!("[WebviewLayout] {}", err);
+            err
+        })?;
+
+    webview.eval("window.history.back()")
+        .map_err(|e| {
+            let err = format!("Failed to go back on webview '{}': {}", label, e);
+            log_error!("[WebviewLayout] {}", err);
+            err
+        })?;
+
+    log_info!("[WebviewLayout] Successfully requested go back on webview '{}'", label);
+    Ok(())
+}
+
+/// Navigates forward in child webview session history
+#[command]
+pub async fn go_forward_tab_webview(
+    app: AppHandle,
+    label: String,
+) -> Result<(), String> {
+    log_info!("[WebviewLayout] go_forward_tab_webview for label '{}'", label);
+
+    let webview = app.get_webview(&label)
+        .ok_or_else(|| {
+            let err = format!("Webview '{}' not found", label);
+            log_error!("[WebviewLayout] {}", err);
+            err
+        })?;
+
+    webview.eval("window.history.forward()")
+        .map_err(|e| {
+            let err = format!("Failed to go forward on webview '{}': {}", label, e);
+            log_error!("[WebviewLayout] {}", err);
+            err
+        })?;
+
+    log_info!("[WebviewLayout] Successfully requested go forward on webview '{}'", label);
+    Ok(())
+}
+
 /// Explicitly closes an existing child webview
 #[command]
 pub async fn close_tab_webview(

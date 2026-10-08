@@ -15,17 +15,35 @@
     // Real Safari does not have `window.chrome`. Injecting it causes risk-control engines
     // (Bilibili Gaia, GeeTest, Cloudflare) to flag the user as an automated bot (UA/object mismatch).
 
-    // 2. Compatibility normalization for Bilibili PC Passport SPA router
-    // Bilibili's Rsbuild/VueRouter is configured with `base: "/pc/passport"`.
-    // Direct requests to `/login` or `/` do not match the base and render an empty `#app`.
+    // 2. Universal SPA History & Route Synchronization
+    // When Single Page Applications update their route via pushState/replaceState/popstate,
+    // re-asserting document.title triggers the native on_document_title_changed callback,
+    // which automatically informs the host window of the updated URL.
     try {
-        if (location.hostname === 'passport.bilibili.com') {
-            if (location.pathname === '/login' || location.pathname === '/') {
-                console.log('[P2PBrowser] Normalizing Bilibili PC passport route -> /pc/passport/login');
-                location.replace('/pc/passport/login' + location.search);
-                return;
-            }
-        }
+        var notifyRouteChanged = function() {
+            setTimeout(function() {
+                if (document.title !== undefined) {
+                    document.title = document.title;
+                }
+            }, 50);
+        };
+
+        var origPushState = history.pushState;
+        history.pushState = function() {
+            var ret = origPushState.apply(this, arguments);
+            notifyRouteChanged();
+            return ret;
+        };
+
+        var origReplaceState = history.replaceState;
+        history.replaceState = function() {
+            var ret = origReplaceState.apply(this, arguments);
+            notifyRouteChanged();
+            return ret;
+        };
+
+        window.addEventListener('popstate', notifyRouteChanged);
+        window.addEventListener('hashchange', notifyRouteChanged);
     } catch (_) {}
 
     // 3. Diagnostic Logging for Developer Tools
@@ -38,22 +56,6 @@
     window.addEventListener('unhandledrejection', function(e) {
         console.warn('[P2PBrowser Diagnostic] Unhandled rejection:', e.reason);
     });
-
-    if (location.hostname.indexOf('bilibili.com') !== -1) {
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                var appEl = document.querySelector('#passport-app') || document.querySelector('#app') || document.body;
-                console.log(
-                    '[P2PBrowser Diagnostic] Bilibili page state:',
-                    location.pathname,
-                    'app children:',
-                    appEl ? appEl.childElementCount : 0,
-                    'text length:',
-                    appEl ? appEl.textContent.trim().length : 0
-                );
-            }, 1000);
-        });
-    }
 
     // 4. Handle Cmd (Mac) / Ctrl (Windows/Linux) click or middle-click on links to open in new tab
     function openLinkInNewTab(url) {

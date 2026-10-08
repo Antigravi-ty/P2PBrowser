@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { BrowserTab, AppRole } from '../types/network';
+import { AppRole, BrowserTab } from '../types/network';
 import { tabWebviewManager } from '../network/TabWebviewManager';
+import { useBrowserStore } from '../store/browserStore';
 
 interface UseTabsProps {
   role: AppRole;
@@ -17,22 +18,20 @@ export function useTabs({
   addLog,
   onOpenNewTabNavigate,
 }: UseTabsProps) {
-  const [tabs, setTabs] = useState<BrowserTab[]>([
-    {
-      id: 'tab_default',
-      title: 'New Tab',
-      url: 'about:blank',
-      isLoading: false,
-      canGoBack: false,
-      canGoForward: false,
-      isSecured: true,
-    },
-  ]);
-  const [activeTabId, setActiveTabId] = useState<string>('tab_default');
+  const tabs = useBrowserStore((state) => state.tabs);
+  const activeTabId = useBrowserStore((state) => state.activeTabId);
+  const setActiveTabId = useBrowserStore((state) => state.setActiveTabId);
+  const newTab = useBrowserStore((state) => state.newTab);
+  const closeTab = useBrowserStore((state) => state.closeTab);
+  const navigate = useBrowserStore((state) => state.navigate);
+  const goBack = useBrowserStore((state) => state.goBack);
+  const goForward = useBrowserStore((state) => state.goForward);
+  const updateTabFromWebview = useBrowserStore((state) => state.updateTabFromWebview);
+  const setTabLoading = useBrowserStore((state) => state.setTabLoading);
 
-  const activeTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
+  const activeTab: BrowserTab = tabs.find((t) => t.id === activeTabId) || tabs[0];
 
-  // Listen for native webview events: tab-state-changed, open-new-tab, start-download
+  // Listen for native webview events: tab-state-changed, open-new-tab
   useEffect(() => {
     if (!isTauri()) return;
 
@@ -44,84 +43,24 @@ export function useTabs({
       if (!payload || !payload.label) return;
       const safeTabId = payload.label.startsWith('wv_') ? payload.label.slice(3) : payload.label;
 
-      // Immediately inform TabWebviewManager of the page's current URL
-      // to avoid duplicate native navigation or load-cancellation loops
+      // Keep native manager informed of current active URL to prevent duplicate loads
       if (payload.url && payload.url !== 'about:blank') {
         tabWebviewManager.recordActiveUrl(safeTabId, payload.url);
       }
 
-      setTabs((prev) =>
-        prev.map((t) => {
-          const currentSafeId = t.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-          if (currentSafeId === safeTabId) {
-            // Keep internal tab info intact
-            if (t.url.startsWith('p2p://')) return t;
-
-            const nextUrl = payload.url || t.url;
-            let nextTitle = t.title;
-            const hasNewTitle = Boolean(payload.title && payload.title.trim());
-
-            if (hasNewTitle) {
-              nextTitle = payload.title.trim();
-            } else if (payload.url && payload.url !== 'about:blank') {
-              let isDifferentHost = false;
-              try {
-                const prevHost = t.url && t.url !== 'about:blank' ? new URL(t.url).hostname : '';
-                const newHost = new URL(payload.url).hostname;
-                isDifferentHost = prevHost !== newHost;
-              } catch (_) {
-                isDifferentHost = t.url !== payload.url;
-              }
-              const hasNoCustomTitle = !nextTitle || nextTitle === 'New Tab';
-
-              if (hasNoCustomTitle || isDifferentHost) {
-                try {
-                  nextTitle = new URL(payload.url).hostname;
-                } catch (_) {
-                  if (hasNoCustomTitle) {
-                    nextTitle = payload.url;
-                  }
-                }
-              }
-            }
-
-            return {
-              ...t,
-              url: nextUrl,
-              title: nextTitle,
-              isLoading: hasNewTitle ? false : t.isLoading,
-            };
-          }
-          return t;
-        })
-      );
+      updateTabFromWebview(safeTabId, payload.url, payload.title);
     })
       .then((unlisten) => {
         if (!isMounted) unlisten();
         else unlistenFns.push(unlisten);
       })
-      .catch((err) => console.warn('[App] Error listening for tab-state-changed:', err));
+      .catch((err) => console.warn('[useTabs] Error listening for tab-state-changed:', err));
 
     listen<{ url: string }>('open-new-tab', (event) => {
       if (event.payload?.url) {
         const u = event.payload.url;
         addLog('info', `[Webview] Opening link in new tab: ${u}`);
-        const newId = `tab_${Date.now()}`;
-        let title = u;
-        try {
-          title = new URL(u).hostname;
-        } catch (_) {}
-        const newTab: BrowserTab = {
-          id: newId,
-          title,
-          url: u,
-          isLoading: true,
-          canGoBack: false,
-          canGoForward: false,
-          isSecured: true,
-        };
-        setTabs((prev) => [...prev, newTab]);
-        setActiveTabId(newId);
+        newTab(u);
         onOpenNewTabNavigate?.();
       }
     })
@@ -129,191 +68,117 @@ export function useTabs({
         if (!isMounted) unlisten();
         else unlistenFns.push(unlisten);
       })
-      .catch((err) => console.warn('[App] Error listening for open-new-tab:', err));
+      .catch((err) => console.warn('[useTabs] Error listening for open-new-tab:', err));
 
     return () => {
       isMounted = false;
       for (const u of unlistenFns) u();
     };
-  }, [addLog, onOpenNewTabNavigate]);
+  }, [addLog, newTab, onOpenNewTabNavigate, updateTabFromWebview]);
 
   const handleNewTab = useCallback(() => {
-    const newId = `tab_${Date.now()}`;
-    const newTab: BrowserTab = {
-      id: newId,
-      title: 'New Tab',
-      url: 'about:blank',
-      isLoading: false,
-      canGoBack: false,
-      canGoForward: false,
-      isSecured: true,
-    };
-    setTabs((prev) => [...prev, newTab]);
-    setActiveTabId(newId);
-  }, []);
+    newTab('about:blank', 'New Tab');
+  }, [newTab]);
 
-  const handleNewTabWithUrl = useCallback((url: string) => {
-    const newId = `tab_${Date.now()}`;
-    let title = url;
-    if (url === 'about:blank') {
-      title = 'New Tab';
-    } else {
-      try {
-        title = new URL(url).hostname;
-      } catch (_) {}
-    }
-    const newTab: BrowserTab = {
-      id: newId,
-      title,
-      url,
-      isLoading: url !== 'about:blank',
-      canGoBack: false,
-      canGoForward: false,
-      isSecured: true,
-    };
-    setTabs((prev) => [...prev, newTab]);
-    setActiveTabId(newId);
-    onOpenNewTabNavigate?.();
-  }, [onOpenNewTabNavigate]);
+  const handleNewTabWithUrl = useCallback(
+    (url: string) => {
+      newTab(url);
+      onOpenNewTabNavigate?.();
+    },
+    [newTab, onOpenNewTabNavigate]
+  );
 
   const openSettingsTab = useCallback(() => {
     tabWebviewManager.hideAll();
-    setTabs((prev) => {
-      const existing = prev.find((t) => t.url === 'p2p://settings');
-      if (existing) {
-        tabWebviewManager.setCurrentInternalTab(existing.id, 'p2p://settings');
-        setActiveTabId(existing.id);
-        return prev;
-      }
-      const id = `tab_settings_${Date.now()}`;
+    const existing = tabs.find((t) => t.url === 'p2p://settings');
+    if (existing) {
+      tabWebviewManager.setCurrentInternalTab(existing.id, 'p2p://settings');
+      setActiveTabId(existing.id);
+    } else {
+      const id = newTab('p2p://settings', 'Settings');
       tabWebviewManager.setCurrentInternalTab(id, 'p2p://settings');
-      const newTab: BrowserTab = {
-        id,
-        title: 'Settings',
-        url: 'p2p://settings',
-        isLoading: false,
-        canGoBack: false,
-        canGoForward: false,
-        isSecured: true,
-      };
-      setActiveTabId(id);
-      return [...prev, newTab];
-    });
+    }
     onOpenNewTabNavigate?.();
-  }, [onOpenNewTabNavigate]);
+  }, [newTab, onOpenNewTabNavigate, setActiveTabId, tabs]);
 
   const openDownloadsTab = useCallback(() => {
     tabWebviewManager.hideAll();
-    setTabs((prev) => {
-      const existing = prev.find((t) => t.url === 'p2p://downloads');
-      if (existing) {
-        tabWebviewManager.setCurrentInternalTab(existing.id, 'p2p://downloads');
-        setActiveTabId(existing.id);
-        return prev;
-      }
-      const id = `tab_downloads_${Date.now()}`;
+    const existing = tabs.find((t) => t.url === 'p2p://downloads');
+    if (existing) {
+      tabWebviewManager.setCurrentInternalTab(existing.id, 'p2p://downloads');
+      setActiveTabId(existing.id);
+    } else {
+      const id = newTab('p2p://downloads', 'Downloads');
       tabWebviewManager.setCurrentInternalTab(id, 'p2p://downloads');
-      const newTab: BrowserTab = {
-        id,
-        title: 'Downloads',
-        url: 'p2p://downloads',
-        isLoading: false,
-        canGoBack: false,
-        canGoForward: false,
-        isSecured: true,
-      };
-      setActiveTabId(id);
-      return [...prev, newTab];
-    });
+    }
     onOpenNewTabNavigate?.();
-  }, [onOpenNewTabNavigate]);
+  }, [newTab, onOpenNewTabNavigate, setActiveTabId, tabs]);
 
-  const handleCloseTab = useCallback((id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const handleCloseTab = useCallback(
+    (id: string, e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      tabWebviewManager.closeTab(id);
+      closeTab(id);
+    },
+    [closeTab]
+  );
 
-    // Clean up native Webview if in Tauri runtime
-    tabWebviewManager.closeTab(id);
-
-    setTabs((prev) => {
-      const nextTabs = prev.filter((t) => t.id !== id);
-      if (nextTabs.length === 0) {
-        const newId = `tab_${Date.now()}`;
-        const freshTab: BrowserTab = {
-          id: newId,
-          title: 'New Tab',
-          url: 'about:blank',
-          isLoading: false,
-          canGoBack: false,
-          canGoForward: false,
-          isSecured: true,
-        };
-        setActiveTabId(newId);
-        return [freshTab];
-      } else {
-        if (activeTabId === id) {
-          const closedIdx = prev.findIndex((t) => t.id === id);
-          const nextActiveIdx = Math.max(0, closedIdx - 1);
-          setActiveTabId(nextTabs[nextActiveIdx].id);
-        }
-        return nextTabs;
+  const handleNavigate = useCallback(
+    (url: string) => {
+      if (url.startsWith('p2p://')) {
+        tabWebviewManager.hideAll();
+        tabWebviewManager.setCurrentInternalTab(activeTabId, url);
+        navigate(url, activeTabId);
+        return;
       }
-    });
-  }, [activeTabId]);
 
-  const handleNavigate = useCallback((url: string) => {
-    if (url.startsWith('p2p://')) {
-      setTabs((prev) =>
-        prev.map((t) => {
-          if (t.id === activeTabId) {
-            return {
-              ...t,
-              url,
-              title: url === 'p2p://settings' ? 'Settings' : url === 'p2p://downloads' ? 'Downloads' : 'Internal Page',
-              isLoading: false,
-            };
-          }
-          return t;
-        })
-      );
-      return;
+      if (role === 'client' && !isClientReadyToBrowse && url !== 'about:blank') {
+        alert(
+          'Please connect to a room, verify Google connectivity, or choose "Continue without Google" before browsing.'
+        );
+        return;
+      }
+
+      if (url === 'about:blank') {
+        tabWebviewManager.hideAll();
+        tabWebviewManager.setCurrentInternalTab(activeTabId, 'about:blank');
+        navigate(url, activeTabId);
+        return;
+      }
+
+      navigate(url, activeTabId);
+
+      const targetTabId = activeTabId;
+      setTimeout(() => {
+        setTabLoading(targetTabId, false);
+      }, 2000);
+    },
+    [activeTabId, isClientReadyToBrowse, navigate, role, setTabLoading]
+  );
+
+  const handleGoBack = useCallback(() => {
+    const res = goBack(activeTabId);
+    if (!res.isBackSuccessful || !res.targetUrl) return;
+
+    if (res.targetUrl === 'about:blank' || res.targetUrl.startsWith('p2p://')) {
+      tabWebviewManager.hideAll();
+      tabWebviewManager.setCurrentInternalTab(activeTabId, res.targetUrl);
+    } else {
+      tabWebviewManager.goBack(activeTabId);
     }
+  }, [activeTabId, goBack]);
 
-    if (role === 'client' && !isClientReadyToBrowse && url !== 'about:blank') {
-      alert('Please connect to a room, verify Google connectivity, or choose "Continue without Google" before browsing.');
-      return;
+  const handleGoForward = useCallback(() => {
+    const res = goForward(activeTabId);
+    if (!res.isForwardSuccessful || !res.targetUrl) return;
+
+    if (res.targetUrl === 'about:blank' || res.targetUrl.startsWith('p2p://')) {
+      tabWebviewManager.hideAll();
+      tabWebviewManager.setCurrentInternalTab(activeTabId, res.targetUrl);
+    } else {
+      tabWebviewManager.goForward(activeTabId);
     }
-
-    setTabs((prev) =>
-      prev.map((t) => {
-        if (t.id === activeTabId) {
-          let title = url;
-          if (url === 'about:blank') {
-            title = 'New Tab';
-          } else {
-            try {
-              title = new URL(url).hostname;
-            } catch (_) {}
-          }
-          return {
-            ...t,
-            url,
-            title: t.url === url && t.title && t.title !== 'New Tab' ? t.title : title,
-            isLoading: url === 'about:blank' ? false : true,
-          };
-        }
-        return t;
-      })
-    );
-
-    if (url === 'about:blank') return;
-
-    const targetTabId = activeTabId;
-    setTimeout(() => {
-      setTabs((prev) =>
-        prev.map((t) => (t.id === targetTabId ? { ...t, isLoading: false } : t))
-      );
-    }, 2000);
-  }, [activeTabId, isClientReadyToBrowse, role]);
+  }, [activeTabId, goForward]);
 
   const handleReload = useCallback(() => {
     if (activeTab.url && activeTab.url !== 'about:blank' && !activeTab.url.startsWith('p2p://')) {
@@ -324,7 +189,6 @@ export function useTabs({
 
   return {
     tabs,
-    setTabs,
     activeTabId,
     setActiveTabId,
     activeTab,
@@ -335,5 +199,7 @@ export function useTabs({
     handleCloseTab,
     handleNavigate,
     handleReload,
+    handleGoBack,
+    handleGoForward,
   };
 }
