@@ -73,10 +73,24 @@ class TabWebviewManager {
     }
   }
 
-  public setCurrentInternalTab(tabId: string, url: string = 'p2p://internal'): void {
+  public async setCurrentInternalTab(tabId: string, url: string = 'p2p://internal'): Promise<void> {
     this.currentTabId = tabId;
     this.activeUrls.set(tabId, url);
-    this.hideAll();
+    await this.hideAll();
+    const curWv = this.activeWebviews.get(tabId);
+    if (curWv) {
+      const safeTabId = tabId.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeLabel = `wv_${safeTabId}`;
+      try {
+        await curWv.close();
+      } catch (_) {}
+      try {
+        await invoke('close_tab_webview', { label: safeLabel });
+      } catch (_) {}
+      this.activeWebviews.delete(tabId);
+      this.activeUrls.delete(tabId);
+      this.activeProxyPorts.delete(tabId);
+    }
   }
 
   public setProxyPort(port: number): void {
@@ -343,10 +357,17 @@ class TabWebviewManager {
       if (url === 'about:blank' || url.startsWith('p2p://')) {
         const curWv = this.activeWebviews.get(tabId);
         if (curWv) {
+          const safeTabId = tabId.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const safeLabel = `wv_${safeTabId}`;
           try {
-            await curWv.hide();
-            await curWv.setPosition(new LogicalPosition(-10000, -10000));
+            await curWv.close();
           } catch (_) {}
+          try {
+            await invoke('close_tab_webview', { label: safeLabel });
+          } catch (_) {}
+          this.activeWebviews.delete(tabId);
+          this.activeUrls.delete(tabId);
+          this.activeProxyPorts.delete(tabId);
         }
         return true;
       }

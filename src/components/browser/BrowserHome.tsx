@@ -11,6 +11,39 @@ interface BrowserHomeProps {
   role?: AppRole;
 }
 
+/**
+ * Partitions shortcuts into balanced, aesthetically pleasing rows:
+ * - 1..3 items: 1 single centered row
+ * - 4 items: 2x2 (2 rows of 2 items)
+ * - 5 items: 2 rows (2 + 3, balanced and centered)
+ * - 6 items: 2x3 (2 rows of 3 items, perfect 3-column grid)
+ * - 7 items: 2 rows (3 + 4, balanced and centered)
+ * - 8 items: 2x4 (2 rows of 4 items, perfect 4-column grid)
+ * - 9 items: 3x3 (3 rows of 3 items)
+ * - 10 items: 2x5 (2 rows of 5 items)
+ * - Default: split evenly into rows of 3 or 4
+ */
+export function partitionShortcuts<T>(items: T[]): T[][] {
+  const n = items.length;
+  if (n === 0) return [];
+  if (n <= 3) return [items];
+  if (n === 4) return [items.slice(0, 2), items.slice(2, 4)];
+  if (n === 5) return [items.slice(0, 2), items.slice(2, 5)];
+  if (n === 6) return [items.slice(0, 3), items.slice(3, 6)];
+  if (n === 7) return [items.slice(0, 3), items.slice(3, 7)];
+  if (n === 8) return [items.slice(0, 4), items.slice(4, 8)];
+  if (n === 9) return [items.slice(0, 3), items.slice(3, 6), items.slice(6, 9)];
+  if (n === 10) return [items.slice(0, 5), items.slice(5, 10)];
+  if (n === 12) return [items.slice(0, 4), items.slice(4, 8), items.slice(8, 12)];
+
+  const perRow = n % 4 === 0 ? 4 : n % 5 === 0 ? 5 : n % 3 === 0 ? 3 : 4;
+  const rows: T[][] = [];
+  for (let i = 0; i < n; i += perRow) {
+    rows.push(items.slice(i, i + perRow));
+  }
+  return rows;
+}
+
 export const BrowserHome: React.FC<BrowserHomeProps> = ({
   onNavigate,
   onNewTabWithUrl,
@@ -18,6 +51,8 @@ export const BrowserHome: React.FC<BrowserHomeProps> = ({
   bypassedGoogle = false,
   role = 'client',
 }) => {
+  const shortcutRows = partitionShortcuts(shortcutsData as ShortcutItem[]);
+
   return (
     <div
       style={{
@@ -68,51 +103,80 @@ export const BrowserHome: React.FC<BrowserHomeProps> = ({
           </span>
         </div>
 
-        {/* Quick Launch Bookmarks */}
+        {/* Quick Launch Bookmarks with Equal Width & Adaptive Row Alignment */}
         <div
           style={{
             display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            gap: '8px',
-            maxWidth: '580px',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '10px',
+            maxWidth: '640px',
+            width: '100%',
             margin: '0 auto',
           }}
         >
-          {shortcutsData.map((link) => (
-            <button
-              key={link.title}
-              onClick={(e) => {
-                if ((e.metaKey || e.ctrlKey) && onNewTabWithUrl) {
-                  onNewTabWithUrl(link.url);
-                } else {
-                  onNavigate(link.url);
-                }
-              }}
-              title={link.url}
+          {shortcutRows.map((row, rowIdx) => (
+            <div
+              key={rowIdx}
               style={{
-                padding: '8px 14px',
-                backgroundColor: 'var(--card-bg)',
-                border: '1px solid var(--border-default)',
-                borderRadius: '6px',
-                color: 'var(--fg-default)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '13px',
-                cursor: 'pointer',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                transition: 'background-color 0.15s ease',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: '10px',
+                width: '100%',
               }}
             >
-              <ShortcutIcon
-                icon={(link as ShortcutItem).icon}
-                iconSvg={(link as any).iconSvg}
-                title={link.title}
-                color={(link as ShortcutItem).color}
-              />
-              <span>{link.title}</span>
-            </button>
+              {row.map((link) => (
+                <button
+                  key={link.title}
+                  onClick={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && onNewTabWithUrl) {
+                      onNewTabWithUrl(link.url);
+                    } else {
+                      onNavigate(link.url);
+                    }
+                  }}
+                  title={link.url}
+                  className="shortcut-card-btn"
+                  style={{
+                    width: '150px',
+                    height: '40px',
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--card-bg)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: '8px',
+                    color: 'var(--fg-default)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                    boxSizing: 'border-box',
+                    flexShrink: 0,
+                  }}
+                >
+                  <ShortcutIcon
+                    icon={(link as ShortcutItem).icon}
+                    iconSvg={(link as any).iconSvg}
+                    title={link.title}
+                    color={(link as ShortcutItem).color}
+                  />
+                  <span
+                    style={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      textAlign: 'left',
+                      flex: 1,
+                    }}
+                  >
+                    {link.title}
+                  </span>
+                </button>
+              ))}
+            </div>
           ))}
         </div>
 

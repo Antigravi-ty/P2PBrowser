@@ -43,8 +43,15 @@ export function useTabs({
       if (!payload || !payload.label) return;
       const safeTabId = payload.label.startsWith('wv_') ? payload.label.slice(3) : payload.label;
 
+      // Ignore event if current tab in store is on about:blank or an internal page
+      const currentTabs = useBrowserStore.getState().tabs;
+      const matchingTab = currentTabs.find((t) => t.id.replace(/[^a-zA-Z0-9_-]/g, '_') === safeTabId);
+      if (matchingTab && isInternalPageUrl(matchingTab.url)) {
+        return;
+      }
+
       // Keep native manager informed of current active URL to prevent duplicate loads
-      if (payload.url && payload.url !== 'about:blank') {
+      if (payload.url && !isInternalPageUrl(payload.url)) {
         tabWebviewManager.recordActiveUrl(safeTabId, payload.url);
       }
 

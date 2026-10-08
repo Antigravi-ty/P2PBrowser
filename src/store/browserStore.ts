@@ -296,10 +296,10 @@ export const useBrowserStore = create<BrowserStoreState>((set, get) => ({
         const currentSafeId = sanitizeTabId(t.id);
         if (currentSafeId !== safeTabId) return t;
 
-        // Internal page tabs ignore external webview callbacks
-        if (t.url.startsWith('p2p://')) return t;
+        // Internal page tabs (about:blank, p2p://, etc.) ignore external webview callbacks
+        if (isInternalPageUrl(t.url)) return t;
 
-        const nextUrl = url && url !== 'about:blank' ? url : t.url;
+        const nextUrl = url && !isInternalPageUrl(url) ? url : t.url;
         let nextTitle = t.title;
         const hasTitle = Boolean(title && title.trim());
 

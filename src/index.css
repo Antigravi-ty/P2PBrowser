@@ -443,3 +443,20 @@ html, body {
   transform: scale(0.97);
 }
 
+/* Equal-width Homepage Shortcut Cards */
+.shortcut-card-btn {
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.shortcut-card-btn:not(:disabled):hover {
+  background-color: var(--bg-subtle) !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.shortcut-card-btn:not(:disabled):active {
+  transform: translateY(0) scale(0.96) !important;
+  background-color: var(--bg-inset) !important;
+}
+
