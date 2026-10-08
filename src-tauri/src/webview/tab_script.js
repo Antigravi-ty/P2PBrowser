@@ -61,33 +61,4 @@
     document.addEventListener("click", handleLinkActivation, true);
     document.addEventListener("auxclick", handleLinkActivation, true);
 
-    // 3. Observe dynamic title mutations for SPAs and client-side routers
-    function observeDocumentTitle() {
-        var titleEl = document.querySelector("title");
-        if (titleEl) {
-            var observer = new MutationObserver(function() {
-                try {
-                    if (document.title) {
-                        document.title = document.title;
-                    }
-                } catch (_) {}
-            });
-            observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
-        } else if (document.head) {
-            var headObserver = new MutationObserver(function() {
-                var addedTitle = document.querySelector("title");
-                if (addedTitle) {
-                    headObserver.disconnect();
-                    observeDocumentTitle();
-                }
-            });
-            headObserver.observe(document.head, { childList: true });
-        }
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", observeDocumentTitle);
-    } else {
-        observeDocumentTitle();
-    }
 })();
