@@ -72,13 +72,14 @@ export function useTabs({
 
     return () => {
       isMounted = false;
-      for (const u of unlistenFns) u();
+      unlistenFns.forEach((fn) => fn());
     };
   }, [addLog, newTab, onOpenNewTabNavigate, updateTabFromWebview]);
 
   const handleNewTab = useCallback(() => {
-    newTab('about:blank', 'New Tab');
-  }, [newTab]);
+    newTab('about:blank');
+    onOpenNewTabNavigate?.();
+  }, [newTab, onOpenNewTabNavigate]);
 
   const handleNewTabWithUrl = useCallback(
     (url: string) => {
@@ -157,6 +158,9 @@ export function useTabs({
   );
 
   const handleGoBack = useCallback(() => {
+    const curTab = tabs.find((t) => t.id === activeTabId);
+    if (!curTab || !curTab.canGoBack) return;
+
     const res = goBack(activeTabId);
     if (!res.isBackSuccessful || !res.targetUrl) return;
 
@@ -164,11 +168,14 @@ export function useTabs({
       tabWebviewManager.hideAll();
       tabWebviewManager.setCurrentInternalTab(activeTabId, res.targetUrl);
     } else {
-      tabWebviewManager.goBack(activeTabId);
+      tabWebviewManager.goBack(activeTabId, res.targetUrl);
     }
-  }, [activeTabId, goBack]);
+  }, [activeTabId, goBack, tabs]);
 
   const handleGoForward = useCallback(() => {
+    const curTab = tabs.find((t) => t.id === activeTabId);
+    if (!curTab || !curTab.canGoForward) return;
+
     const res = goForward(activeTabId);
     if (!res.isForwardSuccessful || !res.targetUrl) return;
 
@@ -176,9 +183,9 @@ export function useTabs({
       tabWebviewManager.hideAll();
       tabWebviewManager.setCurrentInternalTab(activeTabId, res.targetUrl);
     } else {
-      tabWebviewManager.goForward(activeTabId);
+      tabWebviewManager.goForward(activeTabId, res.targetUrl);
     }
-  }, [activeTabId, goForward]);
+  }, [activeTabId, goForward, tabs]);
 
   const handleReload = useCallback(() => {
     if (activeTab.url && activeTab.url !== 'about:blank' && !activeTab.url.startsWith('p2p://')) {

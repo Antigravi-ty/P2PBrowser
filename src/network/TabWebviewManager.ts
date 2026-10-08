@@ -14,12 +14,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Webview, getAllWebviews } from '@tauri-apps/api/webview';
 import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 
-export interface WebviewBounds {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import { WebviewBounds, getTitleBarOffset } from './webview/boundsCalculator';
+export type { WebviewBounds };
 
 export function getPlatformUserAgent(): string {
   if (typeof navigator !== 'undefined') {
@@ -143,45 +139,7 @@ class TabWebviewManager {
    * In fullscreen mode, the titlebar is 0px, so offset is 0.
    */
   private async getTitleBarOffset(): Promise<number> {
-    if (typeof window === 'undefined') return 0;
-
-    const isMac =
-      (typeof navigator !== 'undefined' &&
-        (/Macintosh|Mac OS X/i.test(navigator.userAgent) ||
-          navigator.platform?.includes('Mac'))) ||
-      false;
-
-    if (!isMac) return 0;
-
-    try {
-      const appWindow = getCurrentWindow();
-      const isFullscreen = await appWindow.isFullscreen().catch(() => false);
-      if (isFullscreen) return 0;
-
-      const scaleFactor = await appWindow.scaleFactor().catch(() => window.devicePixelRatio || 1);
-      const outerSize = await appWindow.outerSize().catch(() => null);
-
-      if (outerSize && outerSize.height > 0) {
-        const outerHeightLogical = outerSize.height / scaleFactor;
-        const innerHeightLogical = window.innerHeight;
-        const diff = Math.round(outerHeightLogical - innerHeightLogical);
-        if (diff > 0 && diff < 100) {
-          return diff;
-        }
-      }
-
-      // WebKit synchronous window metrics fallback
-      if (window.outerHeight > window.innerHeight) {
-        const diff = Math.round(window.outerHeight - window.innerHeight);
-        if (diff > 0 && diff < 100) {
-          return diff;
-        }
-      }
-    } catch (e) {
-      console.warn('[TabWebviewManager] Could not detect titlebar offset:', e);
-    }
-
-    return 0;
+    return getTitleBarOffset();
   }
 
   /**
@@ -533,8 +491,11 @@ class TabWebviewManager {
   /**
    * Navigates the given tab backward in its native session history
    */
-  public async goBack(tabId: string): Promise<boolean> {
+  public async goBack(tabId: string, targetUrl?: string): Promise<boolean> {
     if (!this.isSupported) return false;
+    if (targetUrl) {
+      this.activeUrls.set(tabId, targetUrl);
+    }
     const safeTabId = tabId.replace(/[^a-zA-Z0-9_-]/g, '_');
     const safeLabel = `wv_${safeTabId}`;
     try {
@@ -543,6 +504,12 @@ class TabWebviewManager {
       return true;
     } catch (err) {
       console.warn(`[TabWebviewManager] Native go back failed for ${safeLabel}:`, err);
+      if (targetUrl && targetUrl !== 'about:blank' && !targetUrl.startsWith('p2p://')) {
+        try {
+          await invoke('navigate_tab_webview', { label: safeLabel, url: targetUrl });
+          return true;
+        } catch (_) {}
+      }
       return false;
     }
   }
@@ -550,8 +517,11 @@ class TabWebviewManager {
   /**
    * Navigates the given tab forward in its native session history
    */
-  public async goForward(tabId: string): Promise<boolean> {
+  public async goForward(tabId: string, targetUrl?: string): Promise<boolean> {
     if (!this.isSupported) return false;
+    if (targetUrl) {
+      this.activeUrls.set(tabId, targetUrl);
+    }
     const safeTabId = tabId.replace(/[^a-zA-Z0-9_-]/g, '_');
     const safeLabel = `wv_${safeTabId}`;
     try {
@@ -560,6 +530,12 @@ class TabWebviewManager {
       return true;
     } catch (err) {
       console.warn(`[TabWebviewManager] Native go forward failed for ${safeLabel}:`, err);
+      if (targetUrl && targetUrl !== 'about:blank' && !targetUrl.startsWith('p2p://')) {
+        try {
+          await invoke('navigate_tab_webview', { label: safeLabel, url: targetUrl });
+          return true;
+        } catch (_) {}
+      }
       return false;
     }
   }
