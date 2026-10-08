@@ -28,6 +28,7 @@ import {
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { AppRole } from '../types/network';
 import { tabWebviewManager } from '../network/TabWebviewManager';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface SettingsViewProps {
   role: AppRole;
@@ -71,7 +72,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   bypassedGoogle = false,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<SettingCategory>('p2p_room');
-  const [clearDataSuccess, setClearDataSuccess] = useState(false);
   const [logCopyFeedback, setLogCopyFeedback] = useState<string | null>(null);
   const [commitCopyFeedback, setCommitCopyFeedback] = useState<string | null>(null);
   const commitHash = typeof __APP_COMMIT_HASH__ !== 'undefined' ? __APP_COMMIT_HASH__ : 'dev';
@@ -157,13 +157,90 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     },
   ];
 
-  const handleClearCache = async () => {
+  const [clearDialog, setClearDialog] = useState<{
+    isOpen: boolean;
+    type: 'cache' | 'cookies' | 'all';
+    title: string;
+    description: string;
+    warningNote?: string;
+    confirmLabel: string;
+    confirmVariant: 'danger' | 'warning';
+  }>({
+    isOpen: false,
+    type: 'all',
+    title: '',
+    description: '',
+    warningNote: '',
+    confirmLabel: 'Clear',
+    confirmVariant: 'danger',
+  });
+
+  const [clearStatus, setClearStatus] = useState<{
+    type: 'cache' | 'cookies' | 'all' | null;
+    message: string;
+  }>({ type: null, message: '' });
+
+  const openClearCacheDialog = () => {
+    tabWebviewManager.setOverlayOpen(true);
+    setClearDialog({
+      isOpen: true,
+      type: 'cache',
+      title: 'Clear HTTP & Resource Cache?',
+      description: 'This will purge all cached website scripts, images, and stylesheets from local disk memory.',
+      warningNote: 'Your active login sessions and saved cookies will NOT be deleted.',
+      confirmLabel: 'Clear Cache',
+      confirmVariant: 'warning',
+    });
+  };
+
+  const openClearCookiesDialog = () => {
+    tabWebviewManager.setOverlayOpen(true);
+    setClearDialog({
+      isOpen: true,
+      type: 'cookies',
+      title: 'Clear Cookies & Active Sessions?',
+      description: 'This will remove stored cookies, authorization tokens, and persistent site data across all tabs.',
+      warningNote: 'You will be signed out of active accounts (e.g. Google, GitHub, Bilibili).',
+      confirmLabel: 'Clear Cookies & Sign Out',
+      confirmVariant: 'danger',
+    });
+  };
+
+  const openClearAllDialog = () => {
+    tabWebviewManager.setOverlayOpen(true);
+    setClearDialog({
+      isOpen: true,
+      type: 'all',
+      title: 'Clear All Browsing Data?',
+      description: 'This will permanently delete all cookies, local storage databases, active sessions, and HTTP cache files.',
+      warningNote: 'This action is irreversible. All tabs will be reset to a fresh profile.',
+      confirmLabel: 'Permanently Clear All Data',
+      confirmVariant: 'danger',
+    });
+  };
+
+  const closeClearDialog = () => {
+    tabWebviewManager.setOverlayOpen(false);
+    setClearDialog((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const executeClearAction = async () => {
+    const actionType = clearDialog.type;
+    closeClearDialog();
     try {
-      await tabWebviewManager.clearBrowsingData();
-      setClearDataSuccess(true);
-      setTimeout(() => setClearDataSuccess(false), 3000);
+      if (actionType === 'cache') {
+        await tabWebviewManager.clearCache();
+        setClearStatus({ type: 'cache', message: 'Cache cleared!' });
+      } else if (actionType === 'cookies') {
+        await tabWebviewManager.clearCookies();
+        setClearStatus({ type: 'cookies', message: 'Cookies cleared!' });
+      } else {
+        await tabWebviewManager.clearBrowsingData();
+        setClearStatus({ type: 'all', message: 'All data cleared!' });
+      }
+      setTimeout(() => setClearStatus({ type: null, message: '' }), 3500);
     } catch (e) {
-      console.warn('Failed to clear browsing data:', e);
+      console.warn('Failed to execute clear action:', e);
     }
   };
 
@@ -588,31 +665,108 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <div style={{ height: '1px', backgroundColor: 'var(--border-default)' }} />
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 600 }}>Clear Browsing Data</div>
-                    <div style={{ fontSize: '11px', color: 'var(--fg-muted)' }}>
-                      Clear cookies, HTTP cache, and per-tab temporary files.
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--fg-default)' }}>
+                      Browsing Data & Storage Management
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--fg-muted)', marginTop: '2px' }}>
+                      Independently manage HTTP cache, session cookies, or completely reset user data. Each action requires confirmation.
                     </div>
                   </div>
-                  <button
-                    onClick={handleClearCache}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '6px 14px',
-                      borderRadius: '6px',
-                      backgroundColor: 'var(--bg-subtle)',
-                      border: '1px solid var(--border-default)',
-                      color: clearDataSuccess ? 'var(--color-success)' : 'var(--fg-default)',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {clearDataSuccess ? <CheckCircleFillIcon size={14} /> : <TrashIcon size={14} />}
-                    <span>{clearDataSuccess ? 'Cleared!' : 'Clear Cache'}</span>
-                  </button>
+
+                  {/* 1. Clear HTTP Cache */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: 'var(--bg-subtle)', borderRadius: '6px', border: '1px solid var(--border-default)' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600 }}>Clear HTTP & Resource Cache</div>
+                      <div style={{ fontSize: '11px', color: 'var(--fg-muted)' }}>
+                        Frees disk space by removing cached assets. Active login sessions and cookies will NOT be deleted.
+                      </div>
+                    </div>
+                    <button
+                      onClick={openClearCacheDialog}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--bg-canvas)',
+                        border: '1px solid var(--border-default)',
+                        color: clearStatus.type === 'cache' ? 'var(--color-success)' : 'var(--fg-default)',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {clearStatus.type === 'cache' ? <CheckCircleFillIcon size={14} /> : <TrashIcon size={14} />}
+                      <span>{clearStatus.type === 'cache' ? clearStatus.message : 'Clear Cache'}</span>
+                    </button>
+                  </div>
+
+                  {/* 2. Clear Cookies & Sessions */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: 'var(--bg-subtle)', borderRadius: '6px', border: '1px solid var(--border-default)' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600 }}>Clear Cookies & Active Sessions</div>
+                      <div style={{ fontSize: '11px', color: 'var(--fg-muted)' }}>
+                        Deletes authentication tokens and cookies. You will be signed out of active accounts across tabs.
+                      </div>
+                    </div>
+                    <button
+                      onClick={openClearCookiesDialog}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--bg-canvas)',
+                        border: '1px solid rgba(207, 34, 46, 0.4)',
+                        color: clearStatus.type === 'cookies' ? 'var(--color-success)' : 'var(--color-danger)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {clearStatus.type === 'cookies' ? <CheckCircleFillIcon size={14} /> : <TrashIcon size={14} />}
+                      <span>{clearStatus.type === 'cookies' ? clearStatus.message : 'Clear Cookies'}</span>
+                    </button>
+                  </div>
+
+                  {/* 3. Clear All Browsing Data (Danger) */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: 'rgba(207, 34, 46, 0.04)', borderRadius: '6px', border: '1px solid rgba(207, 34, 46, 0.25)' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-danger)' }}>
+                        Clear All Browsing Data
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--fg-muted)' }}>
+                        Permanently deletes all cookies, storage databases, and cache. Full reset to fresh profile.
+                      </div>
+                    </div>
+                    <button
+                      onClick={openClearAllDialog}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        backgroundColor: 'var(--color-danger)',
+                        border: 'none',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                        transition: 'opacity 0.15s ease',
+                      }}
+                    >
+                      {clearStatus.type === 'all' ? <CheckCircleFillIcon size={14} /> : <TrashIcon size={14} />}
+                      <span>{clearStatus.type === 'all' ? clearStatus.message : 'Clear All (Danger)'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </>
@@ -1171,6 +1325,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={clearDialog.isOpen}
+        title={clearDialog.title}
+        description={clearDialog.description}
+        warningNote={clearDialog.warningNote}
+        confirmLabel={clearDialog.confirmLabel}
+        confirmVariant={clearDialog.confirmVariant}
+        onConfirm={executeClearAction}
+        onClose={closeClearDialog}
+      />
     </div>
   );
 };

@@ -20,7 +20,7 @@ pub use socks5::{
 };
 pub use system::{get_system_info, open_devtools};
 pub use webview::{
-    clear_browsing_data, close_tab_webview, create_tab_webview, go_back_tab_webview,
+    clear_browsing_data, clear_cookies, clear_cache, close_tab_webview, create_tab_webview, go_back_tab_webview,
     go_forward_tab_webview, log_webview_console, navigate_tab_webview,
     open_new_tab_requested, reload_tab_webview, start_download_requested, tab_state_update,
 };
@@ -54,6 +54,8 @@ pub fn run() {
             go_forward_tab_webview,
             close_tab_webview,
             clear_browsing_data,
+            clear_cookies,
+            clear_cache,
             log_webview_console,
             tab_state_update,
             open_new_tab_requested,

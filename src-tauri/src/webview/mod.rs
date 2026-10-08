@@ -389,10 +389,30 @@ pub async fn start_download_requested(app: AppHandle, url: String) -> Result<(),
         .map(|_| ())
 }
 
+/// Helper to recursively remove matching files/directories by pattern
+fn delete_matching_entries(root: &std::path::Path, patterns: &[&str]) {
+    if let Ok(entries) = std::fs::read_dir(root) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().to_lowercase();
+            let matches = patterns.iter().any(|pat| name.contains(pat));
+            if matches {
+                if path.is_dir() {
+                    let _ = std::fs::remove_dir_all(&path);
+                } else {
+                    let _ = std::fs::remove_file(&path);
+                }
+            } else if path.is_dir() {
+                delete_matching_entries(&path, patterns);
+            }
+        }
+    }
+}
+
 /// Clear browsing data across all child webviews and delete persistent cookies/storage in shared profile
 #[command]
 pub async fn clear_browsing_data(app: AppHandle) -> Result<(), String> {
-    log_info!("[WebviewLayout] Clearing all browsing data and cookies");
+    log_info!("[WebviewLayout] Clearing all browsing data, cookies, and cache");
     for (_label, webview) in app.webviews() {
         let _ = webview.clear_all_browsing_data();
     }
@@ -406,6 +426,54 @@ pub async fn clear_browsing_data(app: AppHandle) -> Result<(), String> {
         let _ = std::fs::create_dir_all(&data_dir);
     }
     log_info!("[WebviewLayout] Successfully reset shared profile at {:?}", data_dir);
+    Ok(())
+}
+
+/// Clear cookies and local sessions only across all webviews (preserves HTTP cache)
+#[command]
+pub async fn clear_cookies(app: AppHandle) -> Result<(), String> {
+    log_info!("[WebviewLayout] Clearing cookies and local session data");
+    for (_label, webview) in app.webviews() {
+        let _ = webview.eval(r#"
+            try {
+                var cookies = document.cookie.split(";");
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i];
+                    var eqPos = cookie.indexOf("=");
+                    var name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + location.hostname;
+                }
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (_) {}
+        "#);
+    }
+    let local_data = app
+        .path()
+        .app_local_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir().join("p2p_browser"));
+    let data_dir = local_data.join("webviews").join("shared_profile");
+    if data_dir.exists() {
+        delete_matching_entries(&data_dir, &["cookie", "storage", "session", "indexeddb", "leveldb"]);
+    }
+    log_info!("[WebviewLayout] Successfully cleared cookies and session storage");
+    Ok(())
+}
+
+/// Clear HTTP and resource cache only (preserves login sessions and cookies)
+#[command]
+pub async fn clear_cache(app: AppHandle) -> Result<(), String> {
+    log_info!("[WebviewLayout] Clearing HTTP and resource cache");
+    let local_data = app
+        .path()
+        .app_local_data_dir()
+        .unwrap_or_else(|_| std::env::temp_dir().join("p2p_browser"));
+    let data_dir = local_data.join("webviews").join("shared_profile");
+    if data_dir.exists() {
+        delete_matching_entries(&data_dir, &["cache", "code cache", "gpucache", "shadercache", "webkitcache"]);
+    }
+    log_info!("[WebviewLayout] Successfully cleared HTTP cache");
     Ok(())
 }
 

@@ -555,7 +555,7 @@ class TabWebviewManager {
   }
 
   /**
-   * Clears browsing data for a tab or all tabs
+   * Clears browsing data for a tab or all tabs (Cookies, Cache, Storage)
    */
   public async clearBrowsingData(tabId?: string): Promise<void> {
     try {
@@ -580,6 +580,28 @@ class TabWebviewManager {
           console.warn(`[TabWebviewManager] Could not clear data for tab ${id}:`, e);
         }
       }
+    }
+  }
+
+  /**
+   * Clears cookies and local session tokens only (preserves HTTP cache)
+   */
+  public async clearCookies(): Promise<void> {
+    try {
+      await invoke('clear_cookies');
+    } catch (e) {
+      console.warn('[TabWebviewManager] Rust clear_cookies failed:', e);
+    }
+  }
+
+  /**
+   * Clears HTTP cache and temporary resource files only (preserves login cookies)
+   */
+  public async clearCache(): Promise<void> {
+    try {
+      await invoke('clear_cache');
+    } catch (e) {
+      console.warn('[TabWebviewManager] Rust clear_cache failed:', e);
     }
   }
 
