@@ -3,13 +3,29 @@
     var tabLabel = "__WEBVIEW_LABEL__";
 
     // 1. Safe SPA Route & Navigation Synchronization via native document.title re-assertion
-    // Re-asserting document.title triggers native on_document_title_changed in Rust without
-    // any cross-origin IPC fetch requests, completely avoiding CSP (Content Security Policy) errors.
+    // When Single Page Applications alter the browser history stack without a full page reload,
+    // toggling document.title with a zero-width space triggers the native OS on_document_title_changed
+    // callback in Rust without performing any fetch/XHR network requests, completely avoiding
+    // Content Security Policy (CSP) violations.
+    var prevUrl = location.href;
+
     function notifyRouteChanged() {
         setTimeout(function() {
             try {
-                if (document.title !== undefined) {
-                    document.title = document.title;
+                var curUrl = location.href;
+                if (curUrl && curUrl !== prevUrl) {
+                    prevUrl = curUrl;
+                    var rawTitle = document.title || "";
+                    if (rawTitle.indexOf("\u200B") === -1) {
+                        document.title = rawTitle + "\u200B";
+                        setTimeout(function() {
+                            try {
+                                if (document.title && document.title.indexOf("\u200B") !== -1) {
+                                    document.title = rawTitle;
+                                }
+                            } catch (_) {}
+                        }, 20);
+                    }
                 }
             } catch (_) {}
         }, 50);
@@ -30,8 +46,8 @@
             return ret;
         };
 
-        window.addEventListener('popstate', notifyRouteChanged);
-        window.addEventListener('hashchange', notifyRouteChanged);
+        window.addEventListener("popstate", notifyRouteChanged);
+        window.addEventListener("hashchange", notifyRouteChanged);
     } catch (_) {}
 
     // 2. Link Activation: Cmd/Ctrl click or middle click opens in a new tab
@@ -60,34 +76,4 @@
 
     document.addEventListener("click", handleLinkActivation, true);
     document.addEventListener("auxclick", handleLinkActivation, true);
-
-    // 3. Observe dynamic title mutations for SPAs and client-side routers
-    function observeDocumentTitle() {
-        var titleEl = document.querySelector("title");
-        if (titleEl) {
-            var observer = new MutationObserver(function() {
-                try {
-                    if (document.title) {
-                        document.title = document.title;
-                    }
-                } catch (_) {}
-            });
-            observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
-        } else if (document.head) {
-            var headObserver = new MutationObserver(function() {
-                var addedTitle = document.querySelector("title");
-                if (addedTitle) {
-                    headObserver.disconnect();
-                    observeDocumentTitle();
-                }
-            });
-            headObserver.observe(document.head, { childList: true });
-        }
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", observeDocumentTitle);
-    } else {
-        observeDocumentTitle();
-    }
 })();

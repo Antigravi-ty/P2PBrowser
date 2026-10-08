@@ -131,14 +131,15 @@ pub async fn create_tab_webview(
     let title_app = app.clone();
     builder = builder.on_document_title_changed(move |wv, title| {
         let cur_url = wv.url().map(|u| u.to_string()).unwrap_or_default();
-        log_info!("[WebviewNav] [{}] Title update: '{}' (url: '{}')", title_label, title, cur_url);
+        let clean_title = title.replace('\u{200b}', "").trim().to_string();
+        log_info!("[WebviewNav] [{}] Title update: '{}' (url: '{}')", title_label, clean_title, cur_url);
         let _ = title_app.emit_to(
             "main",
             "tab-state-changed",
             TabStatePayload {
                 label: title_label.clone(),
                 url: cur_url,
-                title,
+                title: clean_title,
             },
         );
     });
