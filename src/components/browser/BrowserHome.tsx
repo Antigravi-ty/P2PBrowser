@@ -1,6 +1,7 @@
 import React from 'react';
 import { GoogleProbeResult, AppRole } from '../../types/network';
 import shortcutsData from '../../config/shortcuts.json';
+import { ShortcutIcon, ShortcutItem } from './ShortcutIcon';
 
 interface BrowserHomeProps {
   onNavigate: (url: string) => void;
@@ -104,16 +105,11 @@ export const BrowserHome: React.FC<BrowserHomeProps> = ({
                 transition: 'background-color 0.15s ease',
               }}
             >
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 18,
-                  height: 18,
-                  flexShrink: 0,
-                }}
-                dangerouslySetInnerHTML={{ __html: link.iconSvg }}
+              <ShortcutIcon
+                icon={(link as ShortcutItem).icon}
+                iconSvg={(link as any).iconSvg}
+                title={link.title}
+                color={(link as ShortcutItem).color}
               />
               <span>{link.title}</span>
             </button>

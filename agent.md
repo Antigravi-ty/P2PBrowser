@@ -64,13 +64,20 @@ src/
 │   └── WebSocketSignalingClient.ts # Resilient signaling client with auto-retry and race probes
 ├── store/
 │   └── browserStore.ts         # Centralized Zustand store for tabs, navigation history stacks, and active tab
+├── assets/
+│   ├── fonts/                  # JetBrains Mono font files
+│   └── shortcuts-svg/          # Standalone brand SVG icons (google.svg, github.svg, cloudflare.svg)
 ├── config/
-│   └── shortcuts.json          # Configurable home shortcuts with SVG icons, titles, and URLs
+│   ├── shortcuts.json          # Configurable home shortcuts (Lucide icons, svg:name, or text:XYZ)
+│   ├── shortcuts.schema.json   # JSON schema for shortcuts.json validation
+│   └── shortcutsPlugin.ts      # Vite plugin for build-time shortcuts validation and on-demand Lucide tree-shaking
 ├── types/
 │   └── network.ts              # Core TypeScript type definitions and IPC interfaces
 └── utils/
-    └── logger.ts               # Absolute ISO timestamp logging utility
+    ├── logger.ts               # Absolute ISO timestamp logging utility
+    └── shortcuts.ts            # Shortcut icon name case normalizer
 ```
+
 
 **Key Frontend Principles:**
 - **Decoupled Hooks**: `App.tsx` only acts as a thin orchestrator. State changes in one module (e.g. tabs or theme) must not cascade side effects into tunnel or signaling logic.

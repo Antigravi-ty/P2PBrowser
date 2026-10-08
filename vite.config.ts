@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { shortcutsIconPlugin } from "./src/config/shortcutsPlugin";
 
 let commitHash = "unknown";
 try {
@@ -12,7 +13,7 @@ try {
 }
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), shortcutsIconPlugin()],
   define: {
     __APP_COMMIT_HASH__: JSON.stringify(commitHash),
     __APP_BUILD_TIME__: JSON.stringify(new Date().toISOString()),

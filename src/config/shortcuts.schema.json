@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ShortcutsConfig",
+  "description": "Configuration schema for browser homepage shortcuts",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["title", "url", "icon"],
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "Display name of the shortcut"
+      },
+      "url": {
+        "type": "string",
+        "format": "uri",
+        "description": "Target navigation URL"
+      },
+      "icon": {
+        "type": "string",
+        "description": "Icon descriptor: 1) Lucide icon name (e.g. 'search', 'globe'); 2) Standalone local SVG with 'svg:' prefix (e.g. 'svg:google'); 3) Text monogram up to 3 characters with 'text:' prefix (e.g. 'text:AWS', 'text:G'). Must not be empty.",
+        "pattern": "^(svg:[a-zA-Z0-9_-]+|text:[^\\s]{1,3}|[a-zA-Z0-9_-]+)$"
+      },
+      "color": {
+        "type": "string",
+        "description": "Optional custom color for Lucide icons or Text monograms. Defaults to neutral theme-aware gray."
+      },
+      "iconSvg": {
+        "type": "string",
+        "description": "Legacy inline SVG string for backwards compatibility"
+      }
+    },
+    "additionalProperties": false
+  }
+}
